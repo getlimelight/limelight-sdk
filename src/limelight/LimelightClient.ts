@@ -1,11 +1,12 @@
-import { NetworkInterceptor } from "./interceptors/NetworkInterceptor";
-import { XHRInterceptor } from "./interceptors/XHRInterceptor";
-import { ConsoleInterceptor } from "./interceptors/ConsoleInterceptor";
-import { LimelightConfig, LimelightMessage } from "../types";
-import { safeStringify } from "../helpers/safety/safeStringify";
-import { isDevelopment } from "../helpers/utils/isDevelopment";
-import { DEFAULT_PORT, WS_PATH } from "../constants";
-import { createSessionId } from "../protocol";
+import { LimelightConfig, LimelightMessage } from "@/types";
+import {
+  ConsoleInterceptor,
+  NetworkInterceptor,
+  XHRInterceptor,
+} from "@/limelight/interceptors";
+import { isDevelopment, safeStringify } from "@/helpers";
+import { DEFAULT_PORT, WS_PATH } from "@/constants";
+import { createSessionId } from "@/protocol";
 
 class LimelightClient {
   private ws: WebSocket | null = null;

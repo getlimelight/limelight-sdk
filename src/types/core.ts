@@ -1,9 +1,13 @@
+import {
+  GraphqlOprtation,
+  GraphQLRequest,
+  GraphQLResponse,
+  ConsoleEvent,
+} from "./index";
+
 // ============================================================================
 // ENUMS
 // ============================================================================
-
-import { ConsoleEvent } from "./console";
-import { GraphqlOprtation, GraphQLRequest, GraphQLResponse } from "./graphql";
 
 export enum NetworkType {
   FETCH = "fetch",

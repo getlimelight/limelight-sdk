@@ -1,4 +1,4 @@
-import { ConsoleType } from "../..";
+import { ConsoleType } from "@/types";
 
 /**
  * Detects the type of console message based on its level and content.

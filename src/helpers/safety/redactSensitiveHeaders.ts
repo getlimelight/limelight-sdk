@@ -1,4 +1,4 @@
-import { SENSITIVE_HEADERS } from "../../constants";
+import { SENSITIVE_HEADERS } from "@/constants";
 
 /**
  * Redacts sensitive headers from a given headers object.

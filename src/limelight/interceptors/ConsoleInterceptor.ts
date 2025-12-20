@@ -1,8 +1,11 @@
-import { ConsoleEvent, ConsoleLevel, EventType } from "../../types";
-import { detectLogSource } from "../../helpers/detection/detectSource";
-import type { LimelightConfig, LimelightMessage } from "../../types";
-import { safeStringify } from "../../helpers/safety/safeStringify";
-import { detectConsoleType } from "../../helpers/detection/detectConsoleType";
+import { detectConsoleType, detectLogSource, safeStringify } from "@/helpers";
+import {
+  ConsoleEvent,
+  ConsoleLevel,
+  EventType,
+  LimelightConfig,
+  LimelightMessage,
+} from "@/types";
 
 export class ConsoleInterceptor {
   private originalConsole: Partial<Console> = {};

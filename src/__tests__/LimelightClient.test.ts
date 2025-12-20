@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import WS from "ws";
-import { LimelightClient } from "../limelight/LimelightClient";
+import { LimelightClient } from "@/limelight";
 
 global.WebSocket = WS as any;
 

@@ -1,1 +1,2 @@
-export { Limelight } from "./LimelightClient";
+export { Limelight, LimelightClient } from "./LimelightClient";
+export * from "./interceptors";

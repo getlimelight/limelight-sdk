@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { NetworkInterceptor } from "../limelight/interceptors/NetworkInterceptor";
-import { parseGraphQL } from "../helpers/graphql/parseGraphQL";
+import { NetworkInterceptor } from "@/limelight";
+import { parseGraphQL } from "@/helpers";
 
 describe("NetworkInterceptor", () => {
   let interceptor: NetworkInterceptor;

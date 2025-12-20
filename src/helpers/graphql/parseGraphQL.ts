@@ -1,4 +1,4 @@
-import { NetworkRequest } from "../..";
+import { NetworkRequest } from "@/types";
 import { detectGraphQlOperationType } from "./detectGraphQlOperationType";
 
 /**

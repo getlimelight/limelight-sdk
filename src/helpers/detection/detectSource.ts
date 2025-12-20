@@ -1,5 +1,4 @@
-import { ConsoleSource } from "../..";
-
+import { ConsoleSource } from "@/types";
 /**
  * Detects the source of a console log by analyzing the stack trace.
  * @return {ConsoleSource} The detected source of the console log.

@@ -1,4 +1,4 @@
-import { GraphqlOprtation } from "../..";
+import { GraphqlOprtation } from "@/types";
 
 /**
  * Detects the GraphQL operation type from a query string.

@@ -1,18 +1,21 @@
 import {
-  NetworkType,
-  NetworkPhase,
-  NetworkErrorEvent,
-  NetworkRequest,
   HttpMethod,
-} from "../../types";
-import type { LimelightConfig, LimelightMessage } from "../../types";
-import { isGraphQLRequest } from "../../helpers/graphql/isGraphQLRequest";
-import { parseGraphQL } from "../../helpers/graphql/parseGraphQL";
-import { getInitiator } from "../../helpers/detection/getInitiator";
-import { redactSensitiveHeaders } from "../../helpers/safety/redactSensitiveHeaders";
-import { formatRequestName } from "../../helpers/utils/formatRequestName";
-import { generateRequestId } from "../../protocol";
-import { serializeBody } from "../../helpers/utils";
+  LimelightConfig,
+  LimelightMessage,
+  NetworkErrorEvent,
+  NetworkPhase,
+  NetworkRequest,
+  NetworkType,
+} from "@/types";
+import {
+  formatRequestName,
+  getInitiator,
+  isGraphQLRequest,
+  parseGraphQL,
+  redactSensitiveHeaders,
+  serializeBody,
+} from "@/helpers";
+import { generateRequestId } from "@/protocol";
 
 export class NetworkInterceptor {
   private originalFetch: typeof fetch;

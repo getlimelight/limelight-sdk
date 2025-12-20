@@ -1,4 +1,4 @@
-import { NetworkRequest, NetworkResponse, NetworkType } from "./core";
+import { NetworkRequest, NetworkResponse, NetworkType } from "./index";
 
 /**
  * GRAPHQL EXTENSIONS

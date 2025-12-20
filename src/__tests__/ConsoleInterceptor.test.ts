@@ -1,8 +1,8 @@
 // __tests__/ConsoleInterceptor.test.ts
+import { safeStringify } from "@/helpers";
+import { ConsoleInterceptor } from "@/limelight";
+import { LimelightConfig } from "@/types";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { ConsoleInterceptor } from "../limelight/interceptors/ConsoleInterceptor";
-import { LimelightConfig } from "..";
-import { safeStringify } from "../helpers/safety/safeStringify";
 
 describe("ConsoleInterceptor", () => {
   let interceptor: ConsoleInterceptor;

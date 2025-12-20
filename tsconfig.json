@@ -2,7 +2,11 @@
   "extends": "./react-library.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src", "src/__tests__"],
   "exclude": ["node_modules", "dist"]

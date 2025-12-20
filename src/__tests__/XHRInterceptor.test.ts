@@ -1,6 +1,6 @@
 // __tests__/XHRInterceptor.test.ts
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { XHRInterceptor } from "../limelight/interceptors/XHRInterceptor";
+import { XHRInterceptor } from "@/limelight";
 
 describe("XHRInterceptor", () => {
   let interceptor: XHRInterceptor;

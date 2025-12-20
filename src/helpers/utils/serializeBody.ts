@@ -1,4 +1,4 @@
-import { BodyFormat, SerializedBody } from "../..";
+import { BodyFormat, SerializedBody } from "@/types";
 
 /**
  * Serializes various body types into a normalized format.

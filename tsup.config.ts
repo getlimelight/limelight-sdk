@@ -7,6 +7,9 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   external: [],
-  // This bundles everything including @limelight/shared
-  noExternal: ["@limelight/shared"],
+  esbuildOptions(options) {
+    options.alias = {
+      "@": "./src",
+    };
+  },
 });

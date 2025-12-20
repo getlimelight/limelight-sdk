@@ -3,7 +3,7 @@ import {
   NetworkErrorEvent,
   NetworkRequest,
   NetworkResponse,
-} from ".";
+} from "./index";
 
 /**
  * Configuration options for Limelight SDK.

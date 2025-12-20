@@ -1,4 +1,3 @@
-import { getInitiator } from "../../helpers/detection/getInitiator";
 import {
   LimelightConfig,
   LimelightMessage,
@@ -6,11 +5,14 @@ import {
   NetworkErrorEvent,
   NetworkPhase,
   NetworkType,
-} from "../../types";
-import { redactSensitiveHeaders } from "../../helpers/safety/redactSensitiveHeaders";
-import { formatRequestName } from "../../helpers/utils/formatRequestName";
-import { generateRequestId } from "../../protocol";
-import { serializeBody } from "../../helpers/utils";
+} from "@/types";
+import {
+  redactSensitiveHeaders,
+  serializeBody,
+  formatRequestName,
+  getInitiator,
+} from "@/helpers";
+import { generateRequestId } from "@/protocol";
 
 type XHROpenArgs = Parameters<typeof XMLHttpRequest.prototype.open>;
 
