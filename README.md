@@ -470,13 +470,9 @@ See the `/examples` directory for complete working examples:
 - Next.js web application
 - Custom filtering and privacy controls
 
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
 ## License
 
-MIT © [Your Name/Company]
+MIT © LIMELIGHT
 
 ## Support
 
