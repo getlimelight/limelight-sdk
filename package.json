@@ -1,0 +1,74 @@
+{
+  "name": "@getlimelight/sdk",
+  "version": "0.1.12",
+  "description": "The react native debugger that actually works",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:ci": "vitest run --coverage",
+    "prepublishOnly": "npm run clean && npm run build && npm run test:ci"
+  },
+  "keywords": [
+    "react-native",
+    "react",
+    "node",
+    "debugging",
+    "devtools",
+    "graphql",
+    "network-inspector",
+    "console-logs",
+    "debugging-tool",
+    "react-native-debugger",
+    "react-debugger",
+    "node-debugger",
+    "expo",
+    "typescript"
+  ],
+  "author": "Limelight",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getlimelight/limelight"
+  },
+  "bugs": {
+    "url": "https://github.com/getlimelight/limelight/issues"
+  },
+  "homepage": "https://github.com/getlimelight/limelight",
+  "license": "MIT",
+  "devDependencies": {
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/ws": "^8.18.1",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^20.0.11",
+    "jsdom": "^27.0.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.3.0",
+    "vitest": "^3.2.4",
+    "ws": "^8.18.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
