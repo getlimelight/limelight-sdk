@@ -24,7 +24,7 @@ describe("ConsoleInterceptor", () => {
   });
 
   it("should intercept console.log", () => {
-    interceptor.setup({ enableConsole: true });
+    interceptor.setup({ enableConsole: true, projectKey: "project-123" });
 
     console.log("test message", { data: "value" });
 
@@ -38,7 +38,7 @@ describe("ConsoleInterceptor", () => {
   });
 
   it("should intercept all console methods", () => {
-    interceptor.setup({ enableConsole: true });
+    interceptor.setup({ enableConsole: true, projectKey: "project-123" });
 
     console.log("log");
     console.warn("warn");
@@ -77,6 +77,7 @@ describe("ConsoleInterceptor", () => {
     interceptor.setup({
       enableConsole: true,
       beforeSend,
+      projectKey: "project-123",
     });
 
     console.log("user log");
@@ -113,6 +114,7 @@ describe("ConsoleInterceptor", () => {
     interceptor.setup({
       enableConsole: true,
       beforeSend,
+      projectKey: "project-123",
     });
 
     console.log("blocked message");
@@ -124,7 +126,7 @@ describe("ConsoleInterceptor", () => {
   it("should restore original console on cleanup", () => {
     const original = console.log;
 
-    interceptor.setup({ enableConsole: true });
+    interceptor.setup({ enableConsole: true, projectKey: "project-123" });
     expect(console.log).not.toBe(original);
 
     interceptor.cleanup();

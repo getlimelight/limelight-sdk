@@ -5,7 +5,7 @@ import {
   XHRInterceptor,
 } from "@/limelight/interceptors";
 import { isDevelopment, safeStringify } from "@/helpers";
-import { DEFAULT_PORT, WS_PATH } from "@/constants";
+import { DEFAULT_PORT, SDK_VERSION, WS_PATH } from "@/constants";
 import { createSessionId } from "@/protocol";
 
 class LimelightClient {
@@ -92,11 +92,13 @@ class LimelightClient {
    * @param {LimelightConfig} [config] - Optional configuration object.
    * @returns {void}
    */
-  connect(config?: LimelightConfig) {
+  connect(config: LimelightConfig) {
     if (config) {
       this.configure(config);
     } else if (!this.config) {
-      this.configure({});
+      throw new Error(
+        "[Limelight] Limelight not configured. Please provide a configuration object when calling connect(). Project id is the only required field."
+      );
     }
 
     if (!this.config?.enabled) {
@@ -138,7 +140,11 @@ class LimelightClient {
         timestamp: Date.now(),
         data: {
           appName: appName,
-          platform: platform || "react-native",
+          platform:
+            platform ||
+            (typeof window !== "undefined" ? "web" : "react-native"),
+          projectKey: this.config.projectKey,
+          sdkVersion: SDK_VERSION,
         },
       };
 
@@ -186,7 +192,14 @@ class LimelightClient {
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      this.connect();
+
+      if (this.config) {
+        this.configure(this.config);
+      } else if (!this.config) {
+        throw new Error(
+          "[Limelight] Limelight not configured. Please provide a configuration object when calling connect(). Project id is the only required field."
+        );
+      }
     }, delay);
   }
 

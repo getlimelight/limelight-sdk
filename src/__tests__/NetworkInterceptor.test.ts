@@ -43,6 +43,7 @@ describe("NetworkInterceptor", () => {
       interceptor.setup({
         enableNetworkInspector: true,
         enableGraphQL: false,
+        projectKey: "project-123",
       });
 
       await fetch("https://api.example.com/test", {
@@ -73,7 +74,11 @@ describe("NetworkInterceptor", () => {
         })
       );
 
-      interceptor.setup({ enableNetworkInspector: true, enableGraphQL: true });
+      interceptor.setup({
+        enableNetworkInspector: true,
+        enableGraphQL: true,
+        projectKey: "project-123",
+      });
 
       await fetch("https://api.example.com/graphql", {
         method: "POST",
@@ -102,7 +107,10 @@ describe("NetworkInterceptor", () => {
     it("should handle fetch errors", async () => {
       mockFetch.mockRejectedValue(new Error("Network error"));
 
-      interceptor.setup({ enableNetworkInspector: true });
+      interceptor.setup({
+        enableNetworkInspector: true,
+        projectKey: "project-123",
+      });
 
       await expect(fetch("https://api.example.com/test")).rejects.toThrow(
         "Network error"
@@ -129,6 +137,7 @@ describe("NetworkInterceptor", () => {
       interceptor.setup({
         enableNetworkInspector: true,
         beforeSend,
+        projectKey: "project-123",
       });
 
       await fetch("https://api.example.com/sensitive-data");
@@ -140,8 +149,14 @@ describe("NetworkInterceptor", () => {
     it("should prevent double setup", () => {
       const consoleSpy = vi.spyOn(console, "warn");
 
-      interceptor.setup({ enableNetworkInspector: true });
-      interceptor.setup({ enableNetworkInspector: true });
+      interceptor.setup({
+        enableNetworkInspector: true,
+        projectKey: "project-123",
+      });
+      interceptor.setup({
+        enableNetworkInspector: true,
+        projectKey: "project-123",
+      });
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining("already set up")
@@ -153,7 +168,10 @@ describe("NetworkInterceptor", () => {
     it("should restore original fetch", () => {
       const fetchBeforeSetup = global.fetch;
 
-      interceptor.setup({ enableNetworkInspector: true });
+      interceptor.setup({
+        enableNetworkInspector: true,
+        projectKey: "project-123",
+      });
       expect(global.fetch).not.toBe(fetchBeforeSetup);
 
       interceptor.cleanup();
@@ -165,7 +183,10 @@ describe("NetworkInterceptor", () => {
     it("should handle Request object as input", async () => {
       mockFetch.mockResolvedValue(new Response("ok"));
 
-      interceptor.setup({ enableNetworkInspector: true });
+      interceptor.setup({
+        enableNetworkInspector: true,
+        projectKey: "project-123",
+      });
 
       const request = new Request("https://api.example.com/test", {
         method: "POST",
@@ -184,7 +205,10 @@ describe("NetworkInterceptor", () => {
     it("should handle URL object as input", async () => {
       mockFetch.mockResolvedValue(new Response("ok"));
 
-      interceptor.setup({ enableNetworkInspector: true });
+      interceptor.setup({
+        enableNetworkInspector: true,
+        projectKey: "project-123",
+      });
 
       await fetch(new URL("https://api.example.com/test"));
 
@@ -198,7 +222,10 @@ describe("NetworkInterceptor", () => {
     it("should redact sensitive headers", async () => {
       mockFetch.mockResolvedValue(new Response("ok"));
 
-      interceptor.setup({ enableNetworkInspector: true });
+      interceptor.setup({
+        enableNetworkInspector: true,
+        projectKey: "project-123",
+      });
 
       await fetch("https://api.example.com/test", {
         headers: {

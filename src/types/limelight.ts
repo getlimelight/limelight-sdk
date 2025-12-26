@@ -29,6 +29,10 @@ import {
  */
 export interface LimelightConfig {
   /**
+   * The unique project key for authenticating with the Limelight server.
+   */
+  projectKey: string;
+  /**
    * The platform of the application (e.g., "ios", "android").
    */
   platform?: string;
@@ -73,10 +77,12 @@ export interface ConnectionEvent {
   phase: "CONNECT" | "DISCONNECT";
   sessionId: string;
   timestamp: number;
-  data?: {
+  data: {
     appName?: string;
     platform?: string;
     reason?: string; // for disconnect
+    projectKey: string;
+    sdkVersion: string;
   };
 }
 
