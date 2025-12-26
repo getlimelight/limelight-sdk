@@ -38,7 +38,7 @@ pnpm add @getlimelight/sdk
 import { Limelight } from "@getlimelight/sdk";
 
 // That's it! One line to start debugging
-Limelight.connect();
+Limelight.connect({ projectId: "project-123" });
 ```
 
 ### React Native
@@ -46,7 +46,7 @@ Limelight.connect();
 ```typescript
 import { Limelight } from "@getlimelight/sdk";
 
-Limelight.connect();
+Limelight.connect({ projectId: "project-123" });
 ```
 
 ### Expo
@@ -56,6 +56,7 @@ import { Limelight } from "@getlimelight/sdk";
 import Constants from "expo-constants";
 
 Limelight.connect({
+  projectId: "project-123",
   enabled: __DEV__,
   appName: Constants.expoConfig?.name,
 });
@@ -69,6 +70,9 @@ Limelight.connect({
 import { Limelight } from '@getlimelight/sdk';
 
 Limelight.connect({
+  // The only required field: project Id:
+  projectId: string;
+
   // Optional: Platform identifier (auto-detected)
   platform?: string;
 
@@ -104,6 +108,7 @@ Limelight.connect({
 import { Limelight } from "@getlimelight/sdk";
 
 Limelight.connect({
+  projectId: "project-123",
   enabled: __DEV__, // Only enable in development
   appName: "MyAwesomeApp",
 });
@@ -115,6 +120,7 @@ Limelight.connect({
 import { Limelight } from "@getlimelight/sdk";
 
 Limelight.connect({
+  projectId: "project-123",
   serverUrl: "ws://192.168.1.100:8080", // Your computer's IP
   appName: "MyApp",
 });
@@ -220,7 +226,7 @@ Connects to the Limelight server and starts intercepting network requests and co
 import { Limelight } from "@getlimelight/sdk";
 
 // Minimal usage
-Limelight.connect();
+Limelight.connect({ projectId: "project-123" });
 
 // With configuration
 Limelight.connect({
