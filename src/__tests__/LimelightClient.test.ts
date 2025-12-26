@@ -49,6 +49,7 @@ describe("LimelightClient", () => {
       client.connect({
         serverUrl: "ws://localhost:8080",
         appName: "Test App",
+        projectKey: "project-123",
       });
 
       await expect(connectPromise).resolves.toBeDefined();
@@ -62,14 +63,20 @@ describe("LimelightClient", () => {
         mockServer.once("connection", () => resolve(true));
       });
 
-      client.connect({ serverUrl: "ws://localhost:8080" });
+      client.connect({
+        serverUrl: "ws://localhost:8080",
+        projectKey: "project-123",
+      });
       await firstConnect;
 
       // Wait for connection to be fully established
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Try to connect again
-      client.connect({ serverUrl: "ws://localhost:8080" });
+      client.connect({
+        serverUrl: "ws://localhost:8080",
+        projectKey: "project-123",
+      });
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining("Already connected")
@@ -95,7 +102,10 @@ describe("LimelightClient", () => {
       })) as any;
 
       // 3. Connect (this now uses our mock)
-      client.connect({ serverUrl: "ws://localhost:8080" });
+      client.connect({
+        serverUrl: "ws://localhost:8080",
+        projectKey: "project-123",
+      });
 
       // 4. Manually trigger the failure on the mock instance
       const wsInstance = (client as any).ws;
@@ -163,7 +173,10 @@ describe("LimelightClient", () => {
       });
 
       // Connect and wait for messages to flush
-      client.connect({ serverUrl: "ws://localhost:8080" });
+      client.connect({
+        serverUrl: "ws://localhost:8080",
+        projectKey: "project-123",
+      });
 
       await messagePromise;
 

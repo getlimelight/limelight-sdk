@@ -35,3 +35,10 @@ export const DEFAULT_PORT = 9090;
  * The WebSocket path for Limelight connections.
  */
 export const WS_PATH = "/limelight";
+
+/**
+ * The current SDK version of Limelight.
+ */
+declare const __SDK_VERSION__: string;
+export const SDK_VERSION =
+  typeof __SDK_VERSION__ !== "undefined" ? __SDK_VERSION__ : "test-version";

@@ -18,7 +18,10 @@ describe("XHRInterceptor", () => {
   });
 
   it("should intercept XHR requests", async () => {
-    interceptor.setup({ enableNetworkInspector: true });
+    interceptor.setup({
+      enableNetworkInspector: true,
+      projectKey: "project-123",
+    });
 
     const xhr = new XMLHttpRequest();
 
@@ -48,7 +51,10 @@ describe("XHRInterceptor", () => {
   });
 
   it("should capture request headers", () => {
-    interceptor.setup({ enableNetworkInspector: true });
+    interceptor.setup({
+      enableNetworkInspector: true,
+      projectKey: "project-123",
+    });
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "https://api.example.com/test");
@@ -63,7 +69,10 @@ describe("XHRInterceptor", () => {
   });
 
   it("should handle XHR errors", async () => {
-    interceptor.setup({ enableNetworkInspector: true });
+    interceptor.setup({
+      enableNetworkInspector: true,
+      projectKey: "project-123",
+    });
 
     const xhr = new XMLHttpRequest();
 
@@ -85,7 +94,10 @@ describe("XHRInterceptor", () => {
   });
 
   it("should handle XHR abort", async () => {
-    interceptor.setup({ enableNetworkInspector: true });
+    interceptor.setup({
+      enableNetworkInspector: true,
+      projectKey: "project-123",
+    });
 
     const xhr = new XMLHttpRequest();
 
@@ -108,7 +120,10 @@ describe("XHRInterceptor", () => {
   });
 
   it("should clean up event listeners after request completes", async () => {
-    interceptor.setup({ enableNetworkInspector: true });
+    interceptor.setup({
+      enableNetworkInspector: true,
+      projectKey: "project-123",
+    });
 
     const xhr = new XMLHttpRequest();
 
