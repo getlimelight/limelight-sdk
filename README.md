@@ -38,7 +38,7 @@ pnpm add @getlimelight/sdk
 import { Limelight } from "@getlimelight/sdk";
 
 // That's it! One line to start debugging
-Limelight.connect({ projectId: "project-123" });
+Limelight.connect({ projectKey: "project-123" });
 ```
 
 ### React Native
@@ -46,7 +46,7 @@ Limelight.connect({ projectId: "project-123" });
 ```typescript
 import { Limelight } from "@getlimelight/sdk";
 
-Limelight.connect({ projectId: "project-123" });
+Limelight.connect({ projectKey: "project-123" });
 ```
 
 ### Expo
@@ -56,7 +56,7 @@ import { Limelight } from "@getlimelight/sdk";
 import Constants from "expo-constants";
 
 Limelight.connect({
-  projectId: "project-123",
+  projectKey: "project-123",
   enabled: __DEV__,
   appName: Constants.expoConfig?.name,
 });
@@ -71,7 +71,7 @@ import { Limelight } from '@getlimelight/sdk';
 
 Limelight.connect({
   // The only required field: project Id:
-  projectId: string;
+  projectKey: string;
 
   // Optional: Platform identifier (auto-detected)
   platform?: string;
@@ -108,7 +108,7 @@ Limelight.connect({
 import { Limelight } from "@getlimelight/sdk";
 
 Limelight.connect({
-  projectId: "project-123",
+  projectKey: "project-123",
   enabled: __DEV__, // Only enable in development
   appName: "MyAwesomeApp",
 });
@@ -120,7 +120,7 @@ Limelight.connect({
 import { Limelight } from "@getlimelight/sdk";
 
 Limelight.connect({
-  projectId: "project-123",
+  projectKey: "project-123",
   serverUrl: "ws://192.168.1.100:8080", // Your computer's IP
   appName: "MyApp",
 });
@@ -226,13 +226,13 @@ Connects to the Limelight server and starts intercepting network requests and co
 import { Limelight } from "@getlimelight/sdk";
 
 // Minimal usage
-Limelight.connect({ projectId: "project-123" });
+Limelight.connect({ projectKey: "project-123" });
 
 // With configuration
 Limelight.connect({
   enabled: __DEV__,
   appName: "MyApp",
-  serverUrl: "ws://localhost:8080",
+  projectKey: "project-123",
 });
 ```
 
@@ -294,6 +294,7 @@ interface ConsoleEvent {
 import { Limelight } from "@getlimelight/sdk";
 
 Limelight.connect({
+  projectKey: "project-123",
   enableNetworkInspector: true, // Capture network requests
   enableConsole: true, // Capture console logs
   enableGraphQL: false, // Disable GraphQL parsing
@@ -319,6 +320,7 @@ const getConfig = () => {
   }
 
   return {
+    projectKey: "project-123",
     serverUrl: "ws://localhost:8080",
     enabled: true,
   };
@@ -372,6 +374,7 @@ const config: LimelightConfig = {
     if (event.phase === "NETWORK") {
       console.log(event.url); // TypeScript knows this exists
     }
+
     return event;
   },
 };
@@ -431,6 +434,7 @@ For maximum privacy, disable request/response body capture entirely:
 
 ```typescript
 Limelight.connect({
+  projectKey: "project-123",
   disableBodyCapture: true, // Only capture headers and metadata
 });
 ```
@@ -450,6 +454,7 @@ import { Limelight } from "@getlimelight/sdk";
 
 // For physical devices, use your computer's IP
 Limelight.connect({
+  projectKey: "project-123",
   serverUrl: "ws://192.168.1.100:8080", // Replace with your IP
   enabled: true,
 });
@@ -482,7 +487,7 @@ MIT © LIMELIGHT
 
 ## Support
 
-- 📧 Email: support@getlimelight.io
+- 📧 Email: hello@getlimelight.io
 - 🐛 Issues: [GitHub Issues](https://github.com/getlimelight/limelight/issues)
 
 ---
