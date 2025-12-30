@@ -4,6 +4,7 @@ import {
   NetworkRequest,
   NetworkResponse,
 } from "./index";
+import { RenderBatch, TransactionEvent } from "./render";
 
 /**
  * Configuration options for Limelight SDK.
@@ -65,6 +66,10 @@ export interface LimelightConfig {
    */
   disableBodyCapture?: boolean;
   /**
+   * Flag to enable or disable render inspection.
+   */
+  enableRenderInspector?: boolean;
+  /**
    * A callback function to modify or filter events before they are sent to the server.
    */
   beforeSend?: (event: LimelightMessage) => LimelightMessage | null;
@@ -94,4 +99,6 @@ export type LimelightMessage =
   | NetworkResponse
   | NetworkErrorEvent
   | ConsoleEvent
-  | ConnectionEvent;
+  | ConnectionEvent
+  | RenderBatch
+  | TransactionEvent;

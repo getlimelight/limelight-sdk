@@ -45,9 +45,13 @@
   },
   "homepage": "https://github.com/getlimelight/limelight",
   "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8"
+  },
   "devDependencies": {
     "@testing-library/react": "^16.3.1",
     "@testing-library/react-native": "^13.3.3",
+    "@types/react": "^19.2.7",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
