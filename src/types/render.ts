@@ -73,6 +73,10 @@ export interface RenderEvent {
   parentComponentId?: string;
   depth?: number;
   transactionId?: string;
+  metadata?: {
+    batchedCount?: number;
+    totalDurationMs?: number;
+  };
 }
 
 /**

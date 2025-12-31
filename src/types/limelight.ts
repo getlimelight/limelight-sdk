@@ -1,10 +1,11 @@
+import { RenderSnapshot } from "@/limelight";
 import {
   ConsoleEvent,
   NetworkErrorEvent,
   NetworkRequest,
   NetworkResponse,
 } from "./index";
-import { RenderBatch, TransactionEvent } from "./render";
+import { TransactionEvent } from "./render";
 
 /**
  * Configuration options for Limelight SDK.
@@ -70,7 +71,7 @@ export interface LimelightConfig {
    */
   enableRenderInspector?: boolean;
   /**
-   * A callback function to modify or filter events before they are sent to the server.
+   * A callback function to modify or filter events before they are sent to the server
    */
   beforeSend?: (event: LimelightMessage) => LimelightMessage | null;
 }
@@ -100,5 +101,5 @@ export type LimelightMessage =
   | NetworkErrorEvent
   | ConsoleEvent
   | ConnectionEvent
-  | RenderBatch
-  | TransactionEvent;
+  | RenderSnapshot
+  | TransactionEvent; // LL provider
