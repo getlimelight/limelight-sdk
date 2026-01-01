@@ -173,3 +173,120 @@ export enum FiberFlags {
   Deletion = 8,
   ChildDeletion = 16,
 }
+
+/**
+ * Details about which props changed and how.
+ * This is the key insight that transforms "props changed" into "onPress changed (same value, new reference)"
+ */
+export interface PropChangeDetail {
+  key: string;
+  referenceOnly: boolean; // true = same value, new reference (needs useMemo/useCallback)
+}
+
+/**
+ * Aggregated prop change stats for a component profile.
+ * We track frequency per prop key to identify the most problematic props.
+ */
+export interface PropChangeStats {
+  // How many times each prop key has changed
+  changeCount: Map<string, number>;
+  // How many of those were reference-only changes
+  referenceOnlyCount: Map<string, number>;
+}
+
+/**
+ * Snapshot of prop change stats sent to desktop.
+ */
+export interface PropChangeSnapshot {
+  // Top props that changed, sorted by frequency
+  topChangedProps: {
+    key: string;
+    count: number;
+    referenceOnlyPercent: number; // 0-100
+  }[];
+}
+
+/**
+ * Cumulative profile for a single component.
+ * This is the core data structure - we accumulate here, not in event arrays.
+ */
+export interface ComponentProfile {
+  id: string;
+  componentId: string;
+  componentName: string;
+  componentType: ComponentType;
+
+  mountedAt: number;
+  unmountedAt?: number;
+
+  totalRenders: number;
+  totalRenderCost: number;
+
+  velocityWindowStart: number;
+  velocityWindowCount: number;
+
+  causeBreakdown: Record<RenderCauseType, number>;
+  causeDeltaBreakdown: Record<RenderCauseType, number>;
+
+  lastEmittedRenderCount: number;
+  lastEmittedRenderCost: number;
+  lastEmitTime: number;
+
+  parentCounts: Map<string, number>;
+  primaryParentId?: string;
+  depth: number;
+
+  lastTransactionId?: string;
+
+  isSuspicious: boolean;
+  suspiciousReason?: string;
+
+  // NEW: Prop change tracking
+  propChangeStats: PropChangeStats;
+  // Delta for current snapshot period
+  propChangeDelta: PropChangeDetail[];
+}
+
+/**
+ * Snapshot of component render stats sent to desktop.
+ */
+export interface RenderSnapshot {
+  phase: "RENDER_SNAPSHOT";
+  sessionId: string;
+  timestamp: number;
+  profiles: ComponentProfileSnapshot[];
+}
+
+export interface ComponentProfileSnapshot {
+  id: string;
+  componentId: string;
+  componentName: string;
+  componentType: ComponentType;
+
+  totalRenders: number;
+  totalRenderCost: number;
+  avgRenderCost: number;
+
+  rendersDelta: number;
+  renderCostDelta: number;
+
+  renderVelocity: number;
+
+  causeBreakdown: Record<RenderCauseType, number>;
+  causeDeltaBreakdown: Record<RenderCauseType, number>;
+
+  parentComponentId?: string;
+  depth: number;
+
+  lastTransactionId?: string;
+
+  isSuspicious: boolean;
+  suspiciousReason?: string;
+
+  renderPhase: RenderPhase;
+  mountedAt: number;
+  unmountedAt?: number;
+
+  // NEW: Prop change insights
+  propChanges?: PropChangeSnapshot;
+}

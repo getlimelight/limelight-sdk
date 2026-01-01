@@ -42,3 +42,17 @@ export const WS_PATH = "/limelight";
 declare const __SDK_VERSION__: string;
 export const SDK_VERSION =
   typeof __SDK_VERSION__ !== "undefined" ? __SDK_VERSION__ : "test-version";
+
+/**
+ * Thresholds for suspicious render detection.
+ */
+export const RENDER_THRESHOLDS = {
+  HOT_VELOCITY: 5,
+  HIGH_RENDER_COUNT: 50,
+  VELOCITY_WINDOW_MS: 2000,
+  SNAPSHOT_INTERVAL_MS: 1000,
+  MIN_DELTA_TO_EMIT: 1,
+  MAX_PROP_KEYS_TO_TRACK: 20, // Don't track more than this many unique props
+  MAX_PROP_CHANGES_PER_SNAPSHOT: 10, // Limit delta array size
+  TOP_PROPS_TO_REPORT: 5, // Only report top N changed props
+} as const;

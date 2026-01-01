@@ -1,11 +1,10 @@
-import { RenderSnapshot } from "@/limelight";
 import {
   ConsoleEvent,
   NetworkErrorEvent,
   NetworkRequest,
   NetworkResponse,
 } from "./index";
-import { TransactionEvent } from "./render";
+import { RenderSnapshot, TransactionEvent } from "./render";
 
 /**
  * Configuration options for Limelight SDK.

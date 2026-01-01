@@ -7,166 +7,40 @@ import {
   ReactDevToolsHook,
   FiberTag,
   FiberFlags,
+  ComponentProfile,
+  PropChangeDetail,
+  PropChangeSnapshot,
+  ComponentProfileSnapshot,
 } from "@/types/render";
 import { LimelightConfig, LimelightMessage } from "@/types";
-import { generateRenderId, isDevelopment } from "@/helpers";
+import {
+  createEmptyPropChangeStats,
+  generateRenderId,
+  isDevelopment,
+} from "@/helpers";
 import { getCurrentTransactionId } from "../react/LimelightProvider";
-
-/**
- * Cumulative profile for a single component.
- * This is the core data structure - we accumulate here, not in event arrays.
- */
-interface ComponentProfile {
-  id: string; // Unique profile ID (uses generateRenderId)
-  componentId: string;
-  componentName: string;
-  componentType: ComponentType;
-
-  // Lifecycle
-  mountedAt: number;
-  unmountedAt?: number;
-
-  // Cumulative stats
-  totalRenders: number;
-  // Relative render cost (1 unit per render, normalized by components in commit)
-  // This is NOT wall-clock time - React doesn't expose per-fiber timing
-  totalRenderCost: number;
-
-  // Velocity tracking (cheap: just count + window start, no array allocation)
-  velocityWindowStart: number;
-  velocityWindowCount: number;
-
-  // Cause breakdown (cumulative since mount)
-  causeBreakdown: Record<RenderCauseType, number>;
-  // Cause breakdown (delta since last emit)
-  causeDeltaBreakdown: Record<RenderCauseType, number>;
-
-  // Last emit state (for delta calculation)
-  lastEmittedRenderCount: number;
-  lastEmittedRenderCost: number;
-  lastEmitTime: number;
-
-  // Hierarchy - track most common parent for stability
-  parentCounts: Map<string, number>;
-  primaryParentId?: string;
-  depth: number;
-
-  // Transaction correlation (last transaction that triggered a render)
-  lastTransactionId?: string;
-
-  // Flags
-  isSuspicious: boolean;
-  suspiciousReason?: string;
-}
-
-/**
- * Snapshot of component render stats sent to desktop.
- * Much smaller than individual events.
- */
-export interface RenderSnapshot {
-  phase: "RENDER_SNAPSHOT";
-  sessionId: string;
-  timestamp: number;
-  profiles: ComponentProfileSnapshot[];
-}
-
-export interface ComponentProfileSnapshot {
-  id: string; // Profile ID
-  componentId: string;
-  componentName: string;
-  componentType: ComponentType;
-
-  // Cumulative (total since mount)
-  totalRenders: number;
-  // Relative render cost - NOT wall-clock time
-  // Use for comparison between components, not absolute timing
-  totalRenderCost: number;
-  avgRenderCost: number;
-
-  // Delta since last snapshot
-  rendersDelta: number;
-  renderCostDelta: number;
-
-  // Velocity (renders per second, calculated from sliding window)
-  renderVelocity: number;
-
-  // Cause breakdown (cumulative since mount)
-  causeBreakdown: Record<RenderCauseType, number>;
-  // Cause breakdown (just this snapshot period)
-  causeDeltaBreakdown: Record<RenderCauseType, number>;
-
-  // Hierarchy (most common parent, not last parent)
-  parentComponentId?: string;
-  depth: number;
-
-  // Transaction correlation
-  lastTransactionId?: string;
-
-  // Flags
-  isSuspicious: boolean;
-  suspiciousReason?: string;
-
-  // Lifecycle
-  renderPhase: RenderPhase; // MOUNT on first snapshot, UPDATE thereafter, UNMOUNT on cleanup
-  mountedAt: number;
-  unmountedAt?: number;
-}
-
-/**
- * Thresholds for suspicious render detection.
- */
-const THRESHOLDS = {
-  // Renders per second that's considered "hot"
-  HOT_VELOCITY: 5,
-  // Total renders that warrant attention
-  HIGH_RENDER_COUNT: 50,
-  // Velocity window duration (ms)
-  VELOCITY_WINDOW_MS: 2000,
-  // How often to emit snapshots (ms)
-  SNAPSHOT_INTERVAL_MS: 1000,
-  // Minimum delta to emit (avoid noise)
-  MIN_DELTA_TO_EMIT: 1,
-} as const;
-
-/**
- * Creates an empty cause breakdown record.
- */
-function createEmptyCauseBreakdown(): Record<RenderCauseType, number> {
-  return {
-    [RenderCauseType.STATE_CHANGE]: 0,
-    [RenderCauseType.PROPS_CHANGE]: 0,
-    [RenderCauseType.CONTEXT_CHANGE]: 0,
-    [RenderCauseType.PARENT_RENDER]: 0,
-    [RenderCauseType.FORCE_UPDATE]: 0,
-    [RenderCauseType.UNKNOWN]: 0,
-  };
-}
+import { createEmptyCauseBreakdown } from "@/helpers/render/createEmptyCauseBreakdown";
+import { RENDER_THRESHOLDS } from "@/constants";
 
 /**
  * Intercepts React renders via the DevTools global hook.
- * PROFILES renders instead of logging them - tracks cumulative stats and emits deltas.
  */
 export class RenderInterceptor {
   private sendMessage: (message: LimelightMessage) => void;
   private getSessionId: () => string;
+  //TODO: use config for thresholds
   private config: LimelightConfig | null = null;
   private isSetup = false;
 
-  // Component profiles (the core state)
   private profiles = new Map<string, ComponentProfile>();
-
-  // Fiber to component ID mapping (stable across renders)
   private fiberToComponentId = new WeakMap<MinimalFiber, string>();
   private componentIdCounter = 0;
 
-  // Snapshot scheduling
   private snapshotTimer: ReturnType<typeof setInterval> | null = null;
 
-  // Track current commit for causality and cost distribution
   private currentCommitComponents = new Set<string>();
   private componentsInCurrentCommit = 0;
 
-  // Original hook preservation
   private originalHook: ReactDevToolsHook | null = null;
   private originalOnCommitFiberRoot:
     | ReactDevToolsHook["onCommitFiberRoot"]
@@ -175,7 +49,6 @@ export class RenderInterceptor {
     | ReactDevToolsHook["onCommitFiberUnmount"]
     | null = null;
 
-  // Pending unmounts (emit in next snapshot)
   private pendingUnmounts: ComponentProfile[] = [];
 
   constructor(
@@ -199,10 +72,9 @@ export class RenderInterceptor {
       return;
     }
 
-    // Start snapshot emission loop
     this.snapshotTimer = setInterval(() => {
       this.emitSnapshot();
-    }, THRESHOLDS.SNAPSHOT_INTERVAL_MS);
+    }, RENDER_THRESHOLDS.SNAPSHOT_INTERVAL_MS);
 
     this.isSetup = true;
   }
@@ -268,7 +140,6 @@ export class RenderInterceptor {
 
     globalObj[hookKey] = hook;
   }
-
   /**
    * Handles a fiber root commit - walks tree and ACCUMULATES into profiles.
    * Two-pass: first count components, then accumulate with distributed cost.
@@ -281,10 +152,7 @@ export class RenderInterceptor {
     this.componentsInCurrentCommit = 0;
 
     try {
-      // First pass: count how many components rendered in this commit
       this.countRenderedComponents(root.current);
-
-      // Second pass: accumulate with cost distributed across components
       this.walkFiberTree(root.current, null, 0);
     } catch (error) {
       if (isDevelopment()) {
@@ -357,8 +225,6 @@ export class RenderInterceptor {
     const now = Date.now();
     const cause = this.inferRenderCause(fiber, parentComponentId);
 
-    // Cost is distributed: 1 unit per commit, split across all rendered components
-    // This keeps totals bounded and comparable
     const renderCost =
       this.componentsInCurrentCommit > 0
         ? 1 / this.componentsInCurrentCommit
@@ -367,7 +233,6 @@ export class RenderInterceptor {
     let profile = this.profiles.get(componentId);
 
     if (!profile) {
-      // New component - create profile
       profile = {
         id: generateRenderId(),
         componentId,
@@ -386,30 +251,32 @@ export class RenderInterceptor {
         parentCounts: new Map(),
         depth,
         isSuspicious: false,
+        // NEW
+        propChangeStats: createEmptyPropChangeStats(),
+        propChangeDelta: [],
       };
       this.profiles.set(componentId, profile);
     }
 
-    // Accumulate render count and cost
     profile.totalRenders++;
     profile.totalRenderCost += renderCost;
 
-    // Accumulate cause (both lifetime and delta)
     profile.causeBreakdown[cause.type]++;
     profile.causeDeltaBreakdown[cause.type]++;
 
-    // Track transaction for correlation
+    if (cause.type === RenderCauseType.PROPS_CHANGE && cause.propChanges) {
+      this.accumulatePropChanges(profile, cause.propChanges);
+    }
+
     const transactionId = getCurrentTransactionId();
     if (transactionId) {
       profile.lastTransactionId = transactionId;
     }
 
-    // Track parent for stability (most common parent wins)
     if (parentComponentId) {
       const count = (profile.parentCounts.get(parentComponentId) ?? 0) + 1;
       profile.parentCounts.set(parentComponentId, count);
 
-      // Update primary parent if this one is now most common
       if (
         !profile.primaryParentId ||
         count > (profile.parentCounts.get(profile.primaryParentId) ?? 0)
@@ -420,32 +287,99 @@ export class RenderInterceptor {
 
     profile.depth = depth;
 
-    // Update velocity window (cheap: no array allocation)
-    const windowStart = now - THRESHOLDS.VELOCITY_WINDOW_MS;
+    const windowStart = now - RENDER_THRESHOLDS.VELOCITY_WINDOW_MS;
     if (profile.velocityWindowStart < windowStart) {
-      // Window has shifted - reset count for new window
       profile.velocityWindowStart = now;
       profile.velocityWindowCount = 1;
     } else {
       profile.velocityWindowCount++;
     }
 
-    // Check for suspicious patterns
     this.updateSuspiciousFlag(profile);
   }
 
   /**
-   * Updates the suspicious flag based on current profile state.
+   * NEW: Accumulate prop change details into the profile.
    */
+  private accumulatePropChanges(
+    profile: ComponentProfile,
+    changes: PropChangeDetail[]
+  ): void {
+    const stats = profile.propChangeStats;
+
+    for (const change of changes) {
+      if (
+        stats.changeCount.size >= RENDER_THRESHOLDS.MAX_PROP_KEYS_TO_TRACK &&
+        !stats.changeCount.has(change.key)
+      ) {
+        continue;
+      }
+
+      stats.changeCount.set(
+        change.key,
+        (stats.changeCount.get(change.key) ?? 0) + 1
+      );
+
+      if (change.referenceOnly) {
+        stats.referenceOnlyCount.set(
+          change.key,
+          (stats.referenceOnlyCount.get(change.key) ?? 0) + 1
+        );
+      }
+    }
+
+    if (
+      profile.propChangeDelta.length <
+      RENDER_THRESHOLDS.MAX_PROP_CHANGES_PER_SNAPSHOT
+    ) {
+      profile.propChangeDelta.push(
+        ...changes.slice(
+          0,
+          RENDER_THRESHOLDS.MAX_PROP_CHANGES_PER_SNAPSHOT -
+            profile.propChangeDelta.length
+        )
+      );
+    }
+  }
+
+  /**
+   *  Build prop change snapshot for emission.
+   */
+  private buildPropChangeSnapshot(
+    profile: ComponentProfile
+  ): PropChangeSnapshot | undefined {
+    const stats = profile.propChangeStats;
+
+    if (stats.changeCount.size === 0) {
+      return undefined;
+    }
+
+    const sorted = Array.from(stats.changeCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, RENDER_THRESHOLDS.TOP_PROPS_TO_REPORT);
+
+    const topChangedProps = sorted.map(([key, count]) => {
+      const refOnlyCount = stats.referenceOnlyCount.get(key) ?? 0;
+      return {
+        key,
+        count,
+        referenceOnlyPercent:
+          count > 0 ? Math.round((refOnlyCount / count) * 100) : 0,
+      };
+    });
+
+    return { topChangedProps };
+  }
+
   private updateSuspiciousFlag(profile: ComponentProfile): void {
     const velocity = this.calculateVelocity(profile);
 
-    if (velocity > THRESHOLDS.HOT_VELOCITY) {
+    if (velocity > RENDER_THRESHOLDS.HOT_VELOCITY) {
       profile.isSuspicious = true;
       profile.suspiciousReason = `High render velocity: ${velocity.toFixed(
         1
       )}/sec`;
-    } else if (profile.totalRenders > THRESHOLDS.HIGH_RENDER_COUNT) {
+    } else if (profile.totalRenders > RENDER_THRESHOLDS.HIGH_RENDER_COUNT) {
       profile.isSuspicious = true;
       profile.suspiciousReason = `High total renders: ${profile.totalRenders}`;
     } else {
@@ -462,14 +396,11 @@ export class RenderInterceptor {
     const now = Date.now();
     const windowAge = now - profile.velocityWindowStart;
 
-    // If window is too old, velocity is effectively 0
-    if (windowAge > THRESHOLDS.VELOCITY_WINDOW_MS) {
+    if (windowAge > RENDER_THRESHOLDS.VELOCITY_WINDOW_MS) {
       return 0;
     }
 
-    // Avoid division by zero for very recent windows
     const effectiveWindowMs = Math.max(windowAge, 100);
-
     return (profile.velocityWindowCount / effectiveWindowMs) * 1000;
   }
 
@@ -480,14 +411,12 @@ export class RenderInterceptor {
     const now = Date.now();
     const snapshots: ComponentProfileSnapshot[] = [];
 
-    // Process active profiles
     for (const profile of this.profiles.values()) {
       const rendersDelta =
         profile.totalRenders - profile.lastEmittedRenderCount;
 
-      // Only emit if there's meaningful change OR it's suspicious
       if (
-        rendersDelta < THRESHOLDS.MIN_DELTA_TO_EMIT &&
+        rendersDelta < RENDER_THRESHOLDS.MIN_DELTA_TO_EMIT &&
         !profile.isSuspicious
       ) {
         continue;
@@ -497,6 +426,8 @@ export class RenderInterceptor {
       const isMount = profile.lastEmittedRenderCount === 0;
       const renderCostDelta =
         profile.totalRenderCost - profile.lastEmittedRenderCost;
+
+      const propChanges = this.buildPropChangeSnapshot(profile);
 
       snapshots.push({
         id: profile.id,
@@ -518,19 +449,19 @@ export class RenderInterceptor {
         suspiciousReason: profile.suspiciousReason,
         renderPhase: isMount ? RenderPhase.MOUNT : RenderPhase.UPDATE,
         mountedAt: profile.mountedAt,
+        propChanges,
       });
 
-      // Update emit state
       profile.lastEmittedRenderCount = profile.totalRenders;
       profile.lastEmittedRenderCost = profile.totalRenderCost;
       profile.lastEmitTime = now;
-
-      // Reset delta breakdown for next snapshot period
       profile.causeDeltaBreakdown = createEmptyCauseBreakdown();
+      profile.propChangeDelta = [];
     }
 
-    // Process pending unmounts
     for (const profile of this.pendingUnmounts) {
+      const propChanges = this.buildPropChangeSnapshot(profile);
+
       snapshots.push({
         id: profile.id,
         componentId: profile.componentId,
@@ -553,11 +484,11 @@ export class RenderInterceptor {
         renderPhase: RenderPhase.UNMOUNT,
         mountedAt: profile.mountedAt,
         unmountedAt: profile.unmountedAt,
+        propChanges,
       });
     }
     this.pendingUnmounts = [];
 
-    // Only send if there's something to report
     if (snapshots.length === 0) return;
 
     const message: LimelightMessage = {
@@ -570,6 +501,9 @@ export class RenderInterceptor {
     this.sendMessage(message);
   }
 
+  /**
+   *  Now returns prop change details when applicable.
+   */
   private inferRenderCause(
     fiber: MinimalFiber,
     parentComponentId: string | null
@@ -577,6 +511,7 @@ export class RenderInterceptor {
     type: RenderCauseType;
     confidence: RenderConfidence;
     triggerId?: string;
+    propChanges?: PropChangeDetail[]; // NEW
   } {
     const alternate = fiber.alternate;
 
@@ -587,18 +522,22 @@ export class RenderInterceptor {
       };
     }
 
-    // Parent rendered in same commit
     if (
       parentComponentId &&
       this.currentCommitComponents.has(parentComponentId)
     ) {
-      const propsChanged = fiber.memoizedProps !== alternate.memoizedProps;
+      const prevProps = alternate.memoizedProps;
+      const nextProps = fiber.memoizedProps;
+      const propsChanged = prevProps !== nextProps;
 
       if (propsChanged) {
+        const propChanges = this.diffProps(prevProps, nextProps);
+
         return {
           type: RenderCauseType.PROPS_CHANGE,
           confidence: RenderConfidence.MEDIUM,
           triggerId: parentComponentId,
+          propChanges,
         };
       }
 
@@ -617,7 +556,6 @@ export class RenderInterceptor {
       };
     }
 
-    // Props change (could be context)
     if (fiber.memoizedProps !== alternate.memoizedProps) {
       return {
         type: RenderCauseType.CONTEXT_CHANGE,
@@ -629,6 +567,95 @@ export class RenderInterceptor {
       type: RenderCauseType.UNKNOWN,
       confidence: RenderConfidence.UNKNOWN,
     };
+  }
+
+  /**
+   * Diff props to find which keys changed and whether it's reference-only.
+   * This is the key insight generator.
+   */
+  private diffProps(
+    prevProps: Record<string, any> | null,
+    nextProps: Record<string, any> | null
+  ): PropChangeDetail[] {
+    if (!prevProps || !nextProps) {
+      return [];
+    }
+
+    const changes: PropChangeDetail[] = [];
+    const allKeys = new Set([
+      ...Object.keys(prevProps),
+      ...Object.keys(nextProps),
+    ]);
+
+    const skipKeys = new Set(["children", "key", "ref"]);
+
+    for (const key of allKeys) {
+      if (skipKeys.has(key)) continue;
+
+      const prevValue = prevProps[key];
+      const nextValue = nextProps[key];
+
+      if (prevValue === nextValue) {
+        continue;
+      }
+
+      const referenceOnly = this.isShallowEqual(prevValue, nextValue);
+
+      changes.push({ key, referenceOnly });
+
+      if (changes.length >= 10) {
+        break;
+      }
+    }
+
+    return changes;
+  }
+
+  /**
+   *  Shallow equality check to determine if a prop is reference-only change.
+   * We only go one level deep to keep it fast.
+   */
+  private isShallowEqual(a: any, b: any): boolean {
+    // Same reference (already checked, but for safety)
+    if (a === b) return true;
+
+    // Different types
+    if (typeof a !== typeof b) return false;
+
+    // Null checks
+    if (a === null || b === null) return false;
+
+    // Functions - can't easily compare, assume different
+    // But if they're both functions, it's likely a reference-only change
+    // (same callback recreated)
+    if (typeof a === "function" && typeof b === "function") {
+      // We can't compare function bodies easily, but this is almost always
+      // a reference-only change (inline callback recreated)
+      return true; // Treat as reference-only
+    }
+
+    // Arrays
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    }
+
+    if (typeof a === "object" && typeof b === "object") {
+      const keysA = Object.keys(a);
+      const keysB = Object.keys(b);
+
+      if (keysA.length !== keysB.length) return false;
+
+      for (const key of keysA) {
+        if (a[key] !== b[key]) return false;
+      }
+      return true;
+    }
+
+    return a === b;
   }
 
   private isUserComponent(fiber: MinimalFiber): boolean {
@@ -724,16 +751,13 @@ export class RenderInterceptor {
   cleanup(): void {
     if (!this.isSetup) return;
 
-    // Final snapshot
     this.emitSnapshot();
 
-    // Clear interval
     if (this.snapshotTimer) {
       clearInterval(this.snapshotTimer);
       this.snapshotTimer = null;
     }
 
-    // Restore original hooks
     if (this.originalHook) {
       if (this.originalOnCommitFiberRoot) {
         this.originalHook.onCommitFiberRoot = this.originalOnCommitFiberRoot;
