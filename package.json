@@ -38,12 +38,12 @@
   "author": "Limelight",
   "repository": {
     "type": "git",
-    "url": "https://github.com/getlimelight/limelight"
+    "url": "https://github.com/getlimelight/limelight-sdk"
   },
   "bugs": {
-    "url": "https://github.com/getlimelight/limelight/issues"
+    "url": "https://github.com/getlimelight/limelight-sdk/issues"
   },
-  "homepage": "https://github.com/getlimelight/limelight",
+  "homepage": "https://github.com/getlimelight/limelight-sdk",
   "license": "MIT",
   "devDependencies": {
     "@testing-library/react": "^16.3.1",
