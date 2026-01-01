@@ -174,8 +174,25 @@ export class XHRInterceptor {
             this.getAllResponseHeaders()
           );
 
+          let responseData;
+
+          const responseType = this.responseType || "";
+
+          if (responseType === "" || responseType === "text") {
+            responseData = this.responseText;
+          } else if (
+            responseType === "blob" ||
+            responseType === "arraybuffer"
+          ) {
+            responseData = `[Binary Data: ${responseType}]`;
+          } else if (responseType === "json") {
+            responseData = this.response;
+          } else {
+            responseData = this.response;
+          }
+
           const responseBody = serializeBody(
-            this.responseText || this.response,
+            responseData,
             self.config?.disableBodyCapture
           );
 
