@@ -28,7 +28,7 @@ import { RENDER_THRESHOLDS } from "@/constants";
 export class RenderInterceptor {
   private sendMessage: (message: LimelightMessage) => void;
   private getSessionId: () => string;
-  //TODO: use config for thresholds
+
   private config: LimelightConfig | null = null;
   private isSetup = false;
 
@@ -42,6 +42,7 @@ export class RenderInterceptor {
   private componentsInCurrentCommit = 0;
 
   private originalHook: ReactDevToolsHook | null = null;
+
   private originalOnCommitFiberRoot:
     | ReactDevToolsHook["onCommitFiberRoot"]
     | null = null;
@@ -491,12 +492,18 @@ export class RenderInterceptor {
 
     if (snapshots.length === 0) return;
 
-    const message: LimelightMessage = {
+    let message: LimelightMessage = {
       phase: "RENDER_SNAPSHOT",
       sessionId: this.getSessionId(),
       timestamp: now,
       profiles: snapshots,
     };
+
+    if (this.config?.beforeSend) {
+      const modified = this.config.beforeSend(message);
+      if (!modified) return;
+      message = modified;
+    }
 
     this.sendMessage(message);
   }

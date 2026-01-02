@@ -1,6 +1,6 @@
 {
   "name": "@getlimelight/sdk",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "The react native debugger that actually works",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -42,12 +42,12 @@
   "author": "Limelight",
   "repository": {
     "type": "git",
-    "url": "https://github.com/getlimelight/limelight"
+    "url": "https://github.com/getlimelight/limelight-sdk"
   },
   "bugs": {
-    "url": "https://github.com/getlimelight/limelight/issues"
+    "url": "https://github.com/getlimelight/limelight-sdk/issues"
   },
-  "homepage": "https://github.com/getlimelight/limelight",
+  "homepage": "https://github.com/getlimelight/limelight-sdk",
   "license": "MIT",
   "peerDependencies": {
     "react": ">=16.8"
