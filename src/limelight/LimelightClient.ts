@@ -6,7 +6,7 @@ import {
   XHRInterceptor,
 } from "@/limelight/interceptors";
 import { isDevelopment, safeStringify } from "@/helpers";
-import { DEFAULT_PORT, SDK_VERSION, WS_PATH } from "@/constants";
+import { SDK_VERSION } from "@/constants";
 import { createSessionId } from "@/protocol";
 
 class LimelightClient {
@@ -59,7 +59,7 @@ class LimelightClient {
 
     this.config = {
       appName: "Limelight App",
-      serverUrl: `ws://localhost:${DEFAULT_PORT}${WS_PATH}`,
+      serverUrl: "wss://api.getlimelight.io/limelight",
       enabled: isEnabled,
       enableNetworkInspector: true,
       enableConsole: true,
