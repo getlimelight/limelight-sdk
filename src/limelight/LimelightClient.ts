@@ -2,6 +2,7 @@ import { LimelightConfig, LimelightMessage } from "@/types";
 import {
   ConsoleInterceptor,
   NetworkInterceptor,
+  RenderInterceptor,
   XHRInterceptor,
 } from "@/limelight/interceptors";
 import { isDevelopment, safeStringify } from "@/helpers";
@@ -24,6 +25,7 @@ class LimelightClient {
   private networkInterceptor: NetworkInterceptor;
   private xhrInterceptor: XHRInterceptor;
   private consoleInterceptor: ConsoleInterceptor;
+  private renderInterceptor: RenderInterceptor;
 
   constructor() {
     this.networkInterceptor = new NetworkInterceptor(
@@ -38,11 +40,15 @@ class LimelightClient {
       this.sendMessage.bind(this),
       () => this.sessionId
     );
+    this.renderInterceptor = new RenderInterceptor(
+      this.sendMessage.bind(this),
+      () => this.sessionId
+    );
   }
 
   /**
    * Configures the Limelight client with the provided settings.
-   * Sets up network, XHR, and console interceptors based on the configuration.
+   * Sets up network, XHR, console, and render interceptors based on the configuration.
    * @internal
    * @private
    * @param {LimelightConfig} config - Configuration object for Limelight
@@ -58,6 +64,7 @@ class LimelightClient {
       enableNetworkInspector: true,
       enableConsole: true,
       enableGraphQL: true,
+      enableRenderInspector: true,
       ...config,
     };
 
@@ -75,6 +82,10 @@ class LimelightClient {
 
       if (this.config.enableConsole) {
         this.consoleInterceptor.setup(this.config);
+      }
+
+      if (this.config.enableRenderInspector) {
+        this.renderInterceptor.setup(this.config);
       }
     } catch (error) {
       console.error("[Limelight] Failed to setup interceptors:", error);
@@ -303,6 +314,7 @@ class LimelightClient {
     this.networkInterceptor.cleanup();
     this.xhrInterceptor.cleanup();
     this.consoleInterceptor.cleanup();
+    this.renderInterceptor.cleanup();
 
     this.reconnectAttempts = 0;
     this.messageQueue = [];
