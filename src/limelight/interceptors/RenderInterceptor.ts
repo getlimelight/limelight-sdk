@@ -16,9 +16,9 @@ import { LimelightConfig, LimelightMessage } from "@/types";
 import {
   createEmptyPropChangeStats,
   generateRenderId,
+  getCurrentTransactionId,
   isDevelopment,
 } from "@/helpers";
-import { getCurrentTransactionId } from "../react/LimelightProvider";
 import { createEmptyCauseBreakdown } from "@/helpers/render/createEmptyCauseBreakdown";
 import { RENDER_THRESHOLDS } from "@/constants";
 
@@ -270,6 +270,7 @@ export class RenderInterceptor {
     }
 
     const transactionId = getCurrentTransactionId();
+
     if (transactionId) {
       profile.lastTransactionId = transactionId;
     }
