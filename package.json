@@ -49,9 +49,6 @@
   },
   "homepage": "https://github.com/getlimelight/limelight-sdk",
   "license": "MIT",
-  "peerDependencies": {
-    "react": ">=16.8"
-  },
   "devDependencies": {
     "@testing-library/react": "^16.3.1",
     "@testing-library/react-native": "^13.3.3",
