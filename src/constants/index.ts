@@ -22,14 +22,19 @@ export const SENSITIVE_HEADERS = [
 ];
 
 /**
+ * The WebSocket URL for Limelight web app connections.
+ */
+export const LIMELIGHT_WEB_WSS_URL = "wss://api.getlimelight.io";
+
+/**
+ * The WebSocket URL for Limelight desktop app connections.
+ */
+export const LIMELIGHT_DESKTOP_WSS_URL = "ws://localhost:8484";
+
+/**
  * The current protocol version used by Limelight.
  */
 export const PROTOCOL_VERSION = "0.1.0";
-
-/**
- * Default port number for the Limelight WebSocket server.
- */
-export const DEFAULT_PORT = 9090;
 
 /**
  * The WebSocket path for Limelight connections.
