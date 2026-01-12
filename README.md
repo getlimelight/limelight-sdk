@@ -6,8 +6,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 
+## Official documentation
+
+Read the full docs at **[docs.getlimelight.io](https://docs.getlimelight.io)**.
+
 ## Features
 
+- 🙂 **Find why things re-render** - Get detailed information on what is causing your app to render
 - 🔍 **Network Inspection** - Capture and analyze all network requests (fetch & XMLHttpRequest)
 - 🎯 **GraphQL-First** - Automatic GraphQL operation detection, complexity analysis, and query parsing
 - 📊 **Console Streaming** - Real-time console logs with source detection and stack traces
@@ -32,34 +37,21 @@ pnpm add @getlimelight/sdk
 
 ## Quick Start
 
-### Basic Usage
+### Basic Usage for the desktop app
 
 ```typescript
 import { Limelight } from "@getlimelight/sdk";
 
 // That's it! One line to start debugging
-Limelight.connect({ projectKey: "project-123" });
+Limelight.connect();
 ```
 
-### React Native
+### Provide your projectKey to use the web Limelight app
 
 ```typescript
 import { Limelight } from "@getlimelight/sdk";
 
 Limelight.connect({ projectKey: "project-123" });
-```
-
-### Expo
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-import Constants from "expo-constants";
-
-Limelight.connect({
-  projectKey: "project-123",
-  enabled: __DEV__,
-  appName: Constants.expoConfig?.name,
-});
 ```
 
 ## Configuration
@@ -70,8 +62,8 @@ Limelight.connect({
 import { Limelight } from '@getlimelight/sdk';
 
 Limelight.connect({
-  // The only required field: project Id:
-  projectKey: string;
+  // Required to connect to the Limelight web app. Your project key can be found in organization settings.
+  projectKey?: string;
 
   // Optional: Platform identifier (auto-detected)
   platform?: string;
@@ -120,7 +112,6 @@ Limelight.connect({
 import { Limelight } from "@getlimelight/sdk";
 
 Limelight.connect({
-  projectKey: "project-123",
   serverUrl: "ws://192.168.1.100:8080", // Your computer's IP
   appName: "MyApp",
 });
