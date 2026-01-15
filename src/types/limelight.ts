@@ -32,13 +32,13 @@ export interface LimelightConfig {
   /**
    * The unique project key for authenticating with the Limelight server.
    */
-  projectKey: string;
+  projectKey?: string;
   /**
    * The platform of the application (e.g., "ios", "android").
    */
   platform?: string;
   /**
-   * The URL of the Limelight server to connect to.
+   * The URL of the Limelight server to connect to. If not provided, it falls back to the local wss server url if there is no project key, or the web wss url if there is a project key.
    */
   serverUrl?: string;
   /**

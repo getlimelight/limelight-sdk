@@ -6,7 +6,12 @@ import {
   XHRInterceptor,
 } from "@/limelight/interceptors";
 import { isDevelopment, safeStringify } from "@/helpers";
-import { SDK_VERSION } from "@/constants";
+import {
+  LIMELIGHT_DESKTOP_WSS_URL,
+  LIMELIGHT_WEB_WSS_URL,
+  SDK_VERSION,
+  WS_PATH,
+} from "@/constants";
 import { createSessionId } from "@/protocol";
 
 class LimelightClient {
@@ -54,21 +59,27 @@ class LimelightClient {
    * @param {LimelightConfig} config - Configuration object for Limelight
    * @returns {void}
    */
-  private configure(config: LimelightConfig) {
-    const isEnabled = config.enabled ?? isDevelopment();
+  private configure(config?: LimelightConfig) {
+    const isEnabled = config?.enabled ?? isDevelopment();
+
+    const configServerUrl = config?.serverUrl
+      ? config.serverUrl
+      : config?.projectKey
+      ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
+      : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
 
     this.config = {
-      appName: "Limelight App",
-      serverUrl: "wss://api.getlimelight.io/limelight",
-      enabled: isEnabled,
-      enableNetworkInspector: true,
-      enableConsole: true,
-      enableGraphQL: true,
-      enableRenderInspector: true,
       ...config,
+      appName: config?.appName ?? "Limelight App",
+      serverUrl: configServerUrl,
+      enabled: isEnabled,
+      enableNetworkInspector: config?.enableNetworkInspector ?? true,
+      enableConsole: config?.enableConsole ?? true,
+      enableGraphQL: config?.enableGraphQL ?? true,
+      enableRenderInspector: config?.enableRenderInspector ?? true,
     };
 
-    if (!this.config.enabled) {
+    if (!this.config?.enabled) {
       return;
     }
 
@@ -103,14 +114,8 @@ class LimelightClient {
    * @param {LimelightConfig} [config] - Optional configuration object.
    * @returns {void}
    */
-  connect(config: LimelightConfig) {
-    if (config) {
-      this.configure(config);
-    } else if (!this.config) {
-      throw new Error(
-        "[Limelight] Limelight not configured. Please provide a configuration object when calling connect(). Project id is the only required field."
-      );
-    }
+  connect(config?: LimelightConfig) {
+    this.configure(config);
 
     if (!this.config?.enabled) {
       return;
@@ -154,7 +159,7 @@ class LimelightClient {
           platform:
             platform ||
             (typeof window !== "undefined" ? "web" : "react-native"),
-          projectKey: this.config.projectKey,
+          projectKey: this.config.projectKey || "",
           sdkVersion: SDK_VERSION,
         },
       };
@@ -203,14 +208,7 @@ class LimelightClient {
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-
-      if (this.config) {
-        this.configure(this.config);
-      } else if (!this.config) {
-        throw new Error(
-          "[Limelight] Limelight not configured. Please provide a configuration object when calling connect(). Project id is the only required field."
-        );
-      }
+      this.connect(this.config || undefined);
     }, delay);
   }
 
