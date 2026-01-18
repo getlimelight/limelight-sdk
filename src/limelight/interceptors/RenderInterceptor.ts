@@ -80,6 +80,13 @@ export class RenderInterceptor {
     this.isSetup = true;
   }
 
+  resetProfiles(): void {
+    this.profiles.clear();
+    this.pendingUnmounts = [];
+    this.currentCommitComponents.clear();
+    this.componentIdCounter = 0;
+  }
+
   private installHook(): boolean {
     const globalObj =
       typeof window !== "undefined"

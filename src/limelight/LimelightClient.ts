@@ -13,6 +13,7 @@ import {
   WS_PATH,
 } from "@/constants";
 import { createSessionId } from "@/protocol";
+import { StateInterceptor } from "./interceptors/StateInterceptor";
 
 class LimelightClient {
   private ws: WebSocket | null = null;
@@ -31,23 +32,28 @@ class LimelightClient {
   private xhrInterceptor: XHRInterceptor;
   private consoleInterceptor: ConsoleInterceptor;
   private renderInterceptor: RenderInterceptor;
+  private stateInterceptor: StateInterceptor;
 
   constructor() {
     this.networkInterceptor = new NetworkInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.xhrInterceptor = new XHRInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.consoleInterceptor = new ConsoleInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.renderInterceptor = new RenderInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
+    );
+    this.stateInterceptor = new StateInterceptor(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
     );
   }
 
@@ -65,8 +71,8 @@ class LimelightClient {
     const configServerUrl = config?.serverUrl
       ? config.serverUrl
       : config?.projectKey
-      ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
-      : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
+        ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
+        : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
 
     this.config = {
       ...config,
@@ -77,6 +83,7 @@ class LimelightClient {
       enableConsole: config?.enableConsole ?? true,
       enableGraphQL: config?.enableGraphQL ?? true,
       enableRenderInspector: config?.enableRenderInspector ?? true,
+      enableStateInspector: config?.enableStateInspector ?? true,
     };
 
     if (!this.config?.enabled) {
@@ -97,6 +104,10 @@ class LimelightClient {
 
       if (this.config.enableRenderInspector) {
         this.renderInterceptor.setup(this.config);
+      }
+
+      if (this.config.stores && this.config.enableStateInspector) {
+        this.stateInterceptor.setup(this.config);
       }
     } catch (error) {
       console.error("[Limelight] Failed to setup interceptors:", error);
@@ -203,7 +214,7 @@ class LimelightClient {
     this.reconnectAttempts++;
     const delay = Math.min(
       this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
-      30000
+      30000,
     );
 
     this.reconnectTimer = setTimeout(() => {
@@ -303,7 +314,6 @@ class LimelightClient {
       this.ws = null;
     }
 
-    // Clear timers and interceptors...
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -313,6 +323,7 @@ class LimelightClient {
     this.xhrInterceptor.cleanup();
     this.consoleInterceptor.cleanup();
     this.renderInterceptor.cleanup();
+    this.stateInterceptor.cleanup();
 
     this.reconnectAttempts = 0;
     this.messageQueue = [];
