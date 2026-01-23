@@ -66,20 +66,21 @@ describe("LimelightClient", () => {
       client.connect({
         serverUrl: "ws://localhost:8080",
         projectKey: "project-123",
+        internalLoggingEnabled: true, // Add this
       });
-      await firstConnect;
 
-      // Wait for connection to be fully established
+      await firstConnect;
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Try to connect again
+      // Try to connect again - also needs the flag
       client.connect({
         serverUrl: "ws://localhost:8080",
         projectKey: "project-123",
+        internalLoggingEnabled: true, // Add this
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Already connected")
+        expect.stringContaining("Already connected"),
       );
     });
 

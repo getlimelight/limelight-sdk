@@ -1,6 +1,6 @@
 {
   "name": "@getlimelight/sdk",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "The react native debugger that actually works",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -15,6 +15,7 @@
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "test": "vitest",
+    "publish": "npm publish --access public",
     "test:coverage": "vitest --coverage",
     "test:ci": "vitest run --coverage",
     "prepublishOnly": "npm run clean && npm run build && npm run test:ci",

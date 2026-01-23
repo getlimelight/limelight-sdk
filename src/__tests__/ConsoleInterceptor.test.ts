@@ -33,7 +33,7 @@ describe("ConsoleInterceptor", () => {
         phase: "CONSOLE",
         level: "log",
         args: expect.arrayContaining([expect.stringContaining("test message")]),
-      })
+      }),
     );
   });
 
@@ -57,7 +57,7 @@ describe("ConsoleInterceptor", () => {
     const obj: any = { a: 1 };
     obj.self = obj;
     const result = safeStringify(obj);
-    expect(result).toContain("[Circular]");
+    expect(result).toMatch(/\[Circular.*\]/);
   });
 
   it("should handle undefined", () => {
@@ -89,7 +89,7 @@ describe("ConsoleInterceptor", () => {
     const sendMessageSpy = vi.fn();
     const interceptor = new ConsoleInterceptor(
       sendMessageSpy,
-      () => "session-id"
+      () => "session-id",
     );
 
     // Call setup with a config object

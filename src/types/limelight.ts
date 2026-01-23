@@ -5,6 +5,7 @@ import {
   NetworkResponse,
 } from "./index";
 import { RenderSnapshot, TransactionEvent } from "./render";
+import { StateInitEvent, StateUpdateEvent } from "./state";
 
 /**
  * Configuration options for Limelight SDK.
@@ -70,6 +71,21 @@ export interface LimelightConfig {
    */
   enableRenderInspector?: boolean;
   /**
+   * Zustand store hooks or Redux stores, keyed by display name
+   * @example { user: useUserStore, cart: useCartStore }
+   */
+  stores?: Record<string, unknown>;
+
+  /**
+   * Flag to enable or disable state inspection
+   * @default true (if stores are provided)
+   */
+  enableStateInspector?: boolean;
+  /**
+   * Flag to enable or disable internal logging for the Limelight SDK
+   */
+  internalLoggingEnabled?: boolean;
+  /**
    * A callback function to modify or filter events before they are sent to the server
    */
   beforeSend?: (event: LimelightMessage) => LimelightMessage | null;
@@ -101,4 +117,6 @@ export type LimelightMessage =
   | ConsoleEvent
   | ConnectionEvent
   | RenderSnapshot
-  | TransactionEvent; // LL provider
+  | TransactionEvent
+  | StateInitEvent
+  | StateUpdateEvent;

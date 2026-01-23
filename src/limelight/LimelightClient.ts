@@ -13,6 +13,7 @@ import {
   WS_PATH,
 } from "@/constants";
 import { createSessionId } from "@/protocol";
+import { StateInterceptor } from "./interceptors/StateInterceptor";
 
 class LimelightClient {
   private ws: WebSocket | null = null;
@@ -31,23 +32,28 @@ class LimelightClient {
   private xhrInterceptor: XHRInterceptor;
   private consoleInterceptor: ConsoleInterceptor;
   private renderInterceptor: RenderInterceptor;
+  private stateInterceptor: StateInterceptor;
 
   constructor() {
     this.networkInterceptor = new NetworkInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.xhrInterceptor = new XHRInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.consoleInterceptor = new ConsoleInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.renderInterceptor = new RenderInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
+    );
+    this.stateInterceptor = new StateInterceptor(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
     );
   }
 
@@ -65,8 +71,8 @@ class LimelightClient {
     const configServerUrl = config?.serverUrl
       ? config.serverUrl
       : config?.projectKey
-      ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
-      : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
+        ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
+        : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
 
     this.config = {
       ...config,
@@ -77,6 +83,8 @@ class LimelightClient {
       enableConsole: config?.enableConsole ?? true,
       enableGraphQL: config?.enableGraphQL ?? true,
       enableRenderInspector: config?.enableRenderInspector ?? true,
+      enableStateInspector: config?.enableStateInspector ?? true,
+      internalLoggingEnabled: config?.internalLoggingEnabled ?? false,
     };
 
     if (!this.config?.enabled) {
@@ -98,8 +106,14 @@ class LimelightClient {
       if (this.config.enableRenderInspector) {
         this.renderInterceptor.setup(this.config);
       }
+
+      if (this.config.stores && this.config.enableStateInspector) {
+        this.stateInterceptor.setup(this.config);
+      }
     } catch (error) {
-      console.error("[Limelight] Failed to setup interceptors:", error);
+      if (this.config?.internalLoggingEnabled) {
+        console.error("[Limelight] Failed to setup interceptors:", error);
+      }
     }
   }
 
@@ -122,7 +136,10 @@ class LimelightClient {
     }
 
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.warn("[Limelight] Already connected. Call disconnect() first.");
+      if (this.config?.internalLoggingEnabled) {
+        console.warn("[Limelight] Already connected. Call disconnect() first.");
+      }
+
       return;
     }
 
@@ -143,7 +160,10 @@ class LimelightClient {
     const { serverUrl, appName, platform } = this.config;
 
     if (!serverUrl) {
-      console.error("[Limelight] serverUrl missing in configuration.");
+      if (this.config?.internalLoggingEnabled) {
+        console.error("[Limelight] serverUrl missing in configuration.");
+      }
+
       return;
     }
 
@@ -171,14 +191,19 @@ class LimelightClient {
       };
 
       this.ws.onerror = (error) => {
-        console.error("[Limelight] WebSocket error:", error);
+        if (this.config?.internalLoggingEnabled) {
+          console.error("[Limelight] WebSocket error:", error);
+        }
       };
 
       this.ws.onclose = () => {
         this.attemptReconnect();
       };
     } catch (error) {
-      console.error("[Limelight] Failed to connect:", error);
+      if (this.config?.internalLoggingEnabled) {
+        console.error("[Limelight] Failed to connect:", error);
+      }
+
       this.attemptReconnect();
     }
   }
@@ -203,7 +228,7 @@ class LimelightClient {
     this.reconnectAttempts++;
     const delay = Math.min(
       this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
-      30000
+      30000,
     );
 
     this.reconnectTimer = setTimeout(() => {
@@ -226,7 +251,9 @@ class LimelightClient {
       try {
         this.ws.send(safeStringify(message));
       } catch (error) {
-        console.error("[Limelight] Failed to send queued message:", error);
+        if (this.config?.internalLoggingEnabled) {
+          console.error("[Limelight] Failed to send queued message:", error);
+        }
       }
     }
   }
@@ -247,7 +274,10 @@ class LimelightClient {
         try {
           this.ws.send(safeStringify(message));
         } catch (error) {
-          console.error("[Limelight] Failed to send message:", error);
+          if (this.config?.internalLoggingEnabled) {
+            console.error("[Limelight] Failed to send message:", error);
+          }
+
           this.messageQueue.push(message);
         }
       } else {
@@ -255,9 +285,15 @@ class LimelightClient {
       }
     } else {
       if (this.messageQueue.length >= this.maxQueueSize) {
-        console.warn("[Limelight] Message queue full, dropping oldest message");
+        if (this.config?.internalLoggingEnabled) {
+          console.warn(
+            "[Limelight] Message queue full, dropping oldest message",
+          );
+        }
+
         this.messageQueue.shift();
       }
+
       this.messageQueue.push(message);
     }
   }
@@ -303,7 +339,6 @@ class LimelightClient {
       this.ws = null;
     }
 
-    // Clear timers and interceptors...
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -313,6 +348,7 @@ class LimelightClient {
     this.xhrInterceptor.cleanup();
     this.consoleInterceptor.cleanup();
     this.renderInterceptor.cleanup();
+    this.stateInterceptor.cleanup();
 
     this.reconnectAttempts = 0;
     this.messageQueue = [];
