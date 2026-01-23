@@ -16,6 +16,7 @@ interface RegisteredStore {
 export class StateInterceptor {
   private sendMessage: (message: LimelightMessage) => void;
   private getSessionId: () => string;
+
   private stores: Map<string, RegisteredStore> = new Map();
   private config: LimelightConfig | null = null;
 
@@ -44,6 +45,7 @@ export class StateInterceptor {
    */
   registerStore(name: string, store: unknown): void {
     if (this.stores.has(name)) {
+      //always log warning if store already registered
       console.warn(`[Limelight] Store "${name}" already registered`);
       return;
     }
@@ -51,6 +53,7 @@ export class StateInterceptor {
     const library = this.detectLibrary(store);
 
     if (!library) {
+      //always log warning if store type cannot be detected
       console.warn(
         `[Limelight] Could not detect store type for "${name}". Expected Zustand or Redux store.`,
       );
@@ -104,6 +107,7 @@ export class StateInterceptor {
         modifiedEvent.phase !== StatePhase.INIT &&
         modifiedEvent.phase !== StatePhase.UPDATE
       ) {
+        // always log an error if beforeSend returns wrong type
         console.error("[Limelight] beforeSend must return same event type");
         return;
       }

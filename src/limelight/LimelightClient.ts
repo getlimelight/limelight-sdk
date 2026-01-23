@@ -84,6 +84,7 @@ class LimelightClient {
       enableGraphQL: config?.enableGraphQL ?? true,
       enableRenderInspector: config?.enableRenderInspector ?? true,
       enableStateInspector: config?.enableStateInspector ?? true,
+      internalLoggingEnabled: config?.internalLoggingEnabled ?? false,
     };
 
     if (!this.config?.enabled) {
@@ -110,7 +111,9 @@ class LimelightClient {
         this.stateInterceptor.setup(this.config);
       }
     } catch (error) {
-      console.error("[Limelight] Failed to setup interceptors:", error);
+      if (this.config?.internalLoggingEnabled) {
+        console.error("[Limelight] Failed to setup interceptors:", error);
+      }
     }
   }
 
@@ -133,7 +136,10 @@ class LimelightClient {
     }
 
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.warn("[Limelight] Already connected. Call disconnect() first.");
+      if (this.config?.internalLoggingEnabled) {
+        console.warn("[Limelight] Already connected. Call disconnect() first.");
+      }
+
       return;
     }
 
@@ -154,7 +160,10 @@ class LimelightClient {
     const { serverUrl, appName, platform } = this.config;
 
     if (!serverUrl) {
-      console.error("[Limelight] serverUrl missing in configuration.");
+      if (this.config?.internalLoggingEnabled) {
+        console.error("[Limelight] serverUrl missing in configuration.");
+      }
+
       return;
     }
 
@@ -182,14 +191,19 @@ class LimelightClient {
       };
 
       this.ws.onerror = (error) => {
-        console.error("[Limelight] WebSocket error:", error);
+        if (this.config?.internalLoggingEnabled) {
+          console.error("[Limelight] WebSocket error:", error);
+        }
       };
 
       this.ws.onclose = () => {
         this.attemptReconnect();
       };
     } catch (error) {
-      console.error("[Limelight] Failed to connect:", error);
+      if (this.config?.internalLoggingEnabled) {
+        console.error("[Limelight] Failed to connect:", error);
+      }
+
       this.attemptReconnect();
     }
   }
@@ -237,7 +251,9 @@ class LimelightClient {
       try {
         this.ws.send(safeStringify(message));
       } catch (error) {
-        console.error("[Limelight] Failed to send queued message:", error);
+        if (this.config?.internalLoggingEnabled) {
+          console.error("[Limelight] Failed to send queued message:", error);
+        }
       }
     }
   }
@@ -258,7 +274,10 @@ class LimelightClient {
         try {
           this.ws.send(safeStringify(message));
         } catch (error) {
-          console.error("[Limelight] Failed to send message:", error);
+          if (this.config?.internalLoggingEnabled) {
+            console.error("[Limelight] Failed to send message:", error);
+          }
+
           this.messageQueue.push(message);
         }
       } else {
@@ -266,9 +285,15 @@ class LimelightClient {
       }
     } else {
       if (this.messageQueue.length >= this.maxQueueSize) {
-        console.warn("[Limelight] Message queue full, dropping oldest message");
+        if (this.config?.internalLoggingEnabled) {
+          console.warn(
+            "[Limelight] Message queue full, dropping oldest message",
+          );
+        }
+
         this.messageQueue.shift();
       }
+
       this.messageQueue.push(message);
     }
   }

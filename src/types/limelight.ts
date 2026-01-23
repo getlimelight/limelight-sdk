@@ -82,6 +82,10 @@ export interface LimelightConfig {
    */
   enableStateInspector?: boolean;
   /**
+   * Flag to enable or disable internal logging for the Limelight SDK
+   */
+  internalLoggingEnabled?: boolean;
+  /**
    * A callback function to modify or filter events before they are sent to the server
    */
   beforeSend?: (event: LimelightMessage) => LimelightMessage | null;

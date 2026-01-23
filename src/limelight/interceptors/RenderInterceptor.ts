@@ -54,7 +54,7 @@ export class RenderInterceptor {
 
   constructor(
     sendMessage: (message: LimelightMessage) => void,
-    getSessionId: () => string
+    getSessionId: () => string,
   ) {
     this.sendMessage = sendMessage;
     this.getSessionId = getSessionId;
@@ -62,14 +62,20 @@ export class RenderInterceptor {
 
   setup(config: LimelightConfig): void {
     if (this.isSetup) {
-      console.warn("[Limelight] Render interceptor already set up");
+      if (this.config?.internalLoggingEnabled) {
+        console.warn("[Limelight] Render interceptor already set up");
+      }
+
       return;
     }
 
     this.config = config;
 
     if (!this.installHook()) {
-      console.warn("[Limelight] Failed to install render hook");
+      if (this.config?.internalLoggingEnabled) {
+        console.warn("[Limelight] Failed to install render hook");
+      }
+
       return;
     }
 
@@ -92,8 +98,8 @@ export class RenderInterceptor {
       typeof window !== "undefined"
         ? window
         : typeof global !== "undefined"
-        ? global
-        : null;
+          ? global
+          : null;
 
     if (!globalObj) return false;
 
@@ -154,7 +160,7 @@ export class RenderInterceptor {
    */
   private handleCommitFiberRoot(
     _rendererID: number,
-    root: { current: MinimalFiber }
+    root: { current: MinimalFiber },
   ): void {
     this.currentCommitComponents.clear();
     this.componentsInCurrentCommit = 0;
@@ -163,7 +169,7 @@ export class RenderInterceptor {
       this.countRenderedComponents(root.current);
       this.walkFiberTree(root.current, null, 0);
     } catch (error) {
-      if (isDevelopment()) {
+      if (this.config?.internalLoggingEnabled) {
         console.warn("[Limelight] Error processing fiber tree:", error);
       }
     }
@@ -185,7 +191,7 @@ export class RenderInterceptor {
 
   private handleCommitFiberUnmount(
     _rendererID: number,
-    fiber: MinimalFiber
+    fiber: MinimalFiber,
   ): void {
     if (!this.isUserComponent(fiber)) return;
 
@@ -206,7 +212,7 @@ export class RenderInterceptor {
   private walkFiberTree(
     fiber: MinimalFiber | null,
     parentComponentId: string | null,
-    depth: number
+    depth: number,
   ): void {
     if (!fiber) return;
 
@@ -228,7 +234,7 @@ export class RenderInterceptor {
     fiber: MinimalFiber,
     componentId: string,
     parentComponentId: string | null,
-    depth: number
+    depth: number,
   ): void {
     const now = Date.now();
     const cause = this.inferRenderCause(fiber, parentComponentId);
@@ -312,7 +318,7 @@ export class RenderInterceptor {
    */
   private accumulatePropChanges(
     profile: ComponentProfile,
-    changes: PropChangeDetail[]
+    changes: PropChangeDetail[],
   ): void {
     const stats = profile.propChangeStats;
 
@@ -326,13 +332,13 @@ export class RenderInterceptor {
 
       stats.changeCount.set(
         change.key,
-        (stats.changeCount.get(change.key) ?? 0) + 1
+        (stats.changeCount.get(change.key) ?? 0) + 1,
       );
 
       if (change.referenceOnly) {
         stats.referenceOnlyCount.set(
           change.key,
-          (stats.referenceOnlyCount.get(change.key) ?? 0) + 1
+          (stats.referenceOnlyCount.get(change.key) ?? 0) + 1,
         );
       }
     }
@@ -345,8 +351,8 @@ export class RenderInterceptor {
         ...changes.slice(
           0,
           RENDER_THRESHOLDS.MAX_PROP_CHANGES_PER_SNAPSHOT -
-            profile.propChangeDelta.length
-        )
+            profile.propChangeDelta.length,
+        ),
       );
     }
   }
@@ -355,7 +361,7 @@ export class RenderInterceptor {
    *  Build prop change snapshot for emission.
    */
   private buildPropChangeSnapshot(
-    profile: ComponentProfile
+    profile: ComponentProfile,
   ): PropChangeSnapshot | undefined {
     const stats = profile.propChangeStats;
 
@@ -386,7 +392,7 @@ export class RenderInterceptor {
     if (velocity > RENDER_THRESHOLDS.HOT_VELOCITY) {
       profile.isSuspicious = true;
       profile.suspiciousReason = `High render velocity: ${velocity.toFixed(
-        1
+        1,
       )}/sec`;
     } else if (profile.totalRenders > RENDER_THRESHOLDS.HIGH_RENDER_COUNT) {
       profile.isSuspicious = true;
@@ -521,7 +527,7 @@ export class RenderInterceptor {
    */
   private inferRenderCause(
     fiber: MinimalFiber,
-    parentComponentId: string | null
+    parentComponentId: string | null,
   ): {
     type: RenderCauseType;
     confidence: RenderConfidence;
@@ -590,7 +596,7 @@ export class RenderInterceptor {
    */
   private diffProps(
     prevProps: Record<string, any> | null,
-    nextProps: Record<string, any> | null
+    nextProps: Record<string, any> | null,
   ): PropChangeDetail[] {
     if (!prevProps || !nextProps) {
       return [];

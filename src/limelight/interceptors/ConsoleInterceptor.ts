@@ -16,7 +16,7 @@ export class ConsoleInterceptor {
 
   constructor(
     private sendMessage: (message: LimelightMessage) => void,
-    private getSessionId: () => string
+    private getSessionId: () => string,
   ) {}
 
   /**
@@ -28,9 +28,13 @@ export class ConsoleInterceptor {
    */
   setup(config: LimelightConfig) {
     if (this.isSetup) {
-      console.warn("[Limelight] Console interceptor already set up");
+      if (this.config?.internalLoggingEnabled) {
+        console.warn("[Limelight] Console interceptor already set up");
+      }
+
       return;
     }
+
     this.isSetup = true;
     this.config = config;
 
@@ -81,8 +85,9 @@ export class ConsoleInterceptor {
             }
 
             if (modifiedEvent.phase !== "CONSOLE") {
+              // always log an error if beforeSend returns wrong type
               console.error(
-                "[Limelight] beforeSend must return same event type"
+                "[Limelight] beforeSend must return same event type",
               );
               return original.apply(console, args);
             }
@@ -119,7 +124,7 @@ export class ConsoleInterceptor {
         .slice(3)
         .filter(
           (line) =>
-            !line.includes("ConsoleInterceptor") && !line.includes("limelight")
+            !line.includes("ConsoleInterceptor") && !line.includes("limelight"),
         );
 
       return relevantLines.length > 0 ? relevantLines.join("\n") : undefined;
@@ -134,7 +139,10 @@ export class ConsoleInterceptor {
    */
   cleanup() {
     if (!this.isSetup) {
-      console.warn("[Limelight] Console interceptor not set up");
+      if (this.config?.internalLoggingEnabled) {
+        console.warn("[Limelight] Console interceptor not set up");
+      }
+
       return;
     }
     this.isSetup = false;
