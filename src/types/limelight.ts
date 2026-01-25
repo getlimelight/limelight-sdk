@@ -75,7 +75,6 @@ export interface LimelightConfig {
    * @example { user: useUserStore, cart: useCartStore }
    */
   stores?: Record<string, unknown>;
-
   /**
    * Flag to enable or disable state inspection
    * @default true (if stores are provided)
@@ -84,7 +83,7 @@ export interface LimelightConfig {
   /**
    * Flag to enable or disable internal logging for the Limelight SDK
    */
-  internalLoggingEnabled?: boolean;
+  enableInternalLogging?: boolean;
   /**
    * A callback function to modify or filter events before they are sent to the server
    */
