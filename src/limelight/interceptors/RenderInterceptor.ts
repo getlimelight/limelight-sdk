@@ -62,7 +62,7 @@ export class RenderInterceptor {
 
   setup(config: LimelightConfig): void {
     if (this.isSetup) {
-      if (this.config?.enabgleInternalLogging) {
+      if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] Render interceptor already set up");
       }
 
@@ -72,7 +72,7 @@ export class RenderInterceptor {
     this.config = config;
 
     if (!this.installHook()) {
-      if (this.config?.enabgleInternalLogging) {
+      if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] Failed to install render hook");
       }
 
@@ -169,7 +169,7 @@ export class RenderInterceptor {
       this.countRenderedComponents(root.current);
       this.walkFiberTree(root.current, null, 0);
     } catch (error) {
-      if (this.config?.enabgleInternalLogging) {
+      if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] Error processing fiber tree:", error);
       }
     }

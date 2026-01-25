@@ -66,7 +66,7 @@ describe("LimelightClient", () => {
       client.connect({
         serverUrl: "ws://localhost:8080",
         projectKey: "project-123",
-        enabgleInternalLogging: true, // Add this
+        enableInternalLogging: true, // Add this
       });
 
       await firstConnect;
@@ -76,7 +76,7 @@ describe("LimelightClient", () => {
       client.connect({
         serverUrl: "ws://localhost:8080",
         projectKey: "project-123",
-        enabgleInternalLogging: true, // Add this
+        enableInternalLogging: true, // Add this
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(

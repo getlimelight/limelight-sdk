@@ -57,7 +57,7 @@ export class XHRInterceptor {
    */
   setup(config: LimelightConfig) {
     if (this.isSetup) {
-      if (this.config?.enabgleInternalLogging) {
+      if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] XHR interceptor already set up");
       }
 
@@ -345,7 +345,7 @@ export class XHRInterceptor {
    */
   cleanup() {
     if (!this.isSetup) {
-      if (this.config?.enabgleInternalLogging) {
+      if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] XHR interceptor not set up");
       }
 
