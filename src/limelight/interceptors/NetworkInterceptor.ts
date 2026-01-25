@@ -39,7 +39,7 @@ export class NetworkInterceptor {
    */
   setup(config: LimelightConfig) {
     if (this.isSetup) {
-      if (this.config?.internalLoggingEnabled) {
+      if (this.config?.enabgleInternalLogging) {
         console.warn("[Limelight] Network interceptor already set up");
       }
 
@@ -102,7 +102,7 @@ export class NetworkInterceptor {
         } catch {
           requestBodyToSerialize = undefined;
 
-          if (self.config?.internalLoggingEnabled) {
+          if (self.config?.enabgleInternalLogging) {
             console.warn(
               "[Limelight] Failed to read request body from Request object",
             );
@@ -252,7 +252,7 @@ export class NetworkInterceptor {
    */
   cleanup() {
     if (!this.isSetup) {
-      if (this.config?.internalLoggingEnabled) {
+      if (this.config?.enabgleInternalLogging) {
         console.warn("[Limelight] Network interceptor not set up");
       }
 

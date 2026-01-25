@@ -84,7 +84,7 @@ export interface LimelightConfig {
   /**
    * Flag to enable or disable internal logging for the Limelight SDK
    */
-  internalLoggingEnabled?: boolean;
+  enabgleInternalLogging?: boolean;
   /**
    * A callback function to modify or filter events before they are sent to the server
    */

@@ -152,13 +152,13 @@ describe("NetworkInterceptor", () => {
       interceptor.setup({
         enableNetworkInspector: true,
         projectKey: "project-123",
-        internalLoggingEnabled: true,
+        enabgleInternalLogging: true,
       });
 
       interceptor.setup({
         enableNetworkInspector: true,
         projectKey: "project-123",
-        internalLoggingEnabled: true,
+        enabgleInternalLogging: true,
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(

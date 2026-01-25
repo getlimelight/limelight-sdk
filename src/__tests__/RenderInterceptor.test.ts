@@ -117,13 +117,13 @@ describe("RenderInterceptor", () => {
       interceptor.setup({
         projectKey: "test-key",
         enabled: true,
-        internalLoggingEnabled: true,
+        enabgleInternalLogging: true,
       });
 
       interceptor.setup({
         projectKey: "test-key",
         enabled: true,
-        internalLoggingEnabled: true,
+        enabgleInternalLogging: true,
       });
 
       expect(warnSpy).toHaveBeenCalledWith(

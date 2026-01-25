@@ -28,7 +28,7 @@ export class ConsoleInterceptor {
    */
   setup(config: LimelightConfig) {
     if (this.isSetup) {
-      if (this.config?.internalLoggingEnabled) {
+      if (this.config?.enabgleInternalLogging) {
         console.warn("[Limelight] Console interceptor already set up");
       }
 
@@ -139,7 +139,7 @@ export class ConsoleInterceptor {
    */
   cleanup() {
     if (!this.isSetup) {
-      if (this.config?.internalLoggingEnabled) {
+      if (this.config?.enabgleInternalLogging) {
         console.warn("[Limelight] Console interceptor not set up");
       }
 
