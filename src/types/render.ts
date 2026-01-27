@@ -128,12 +128,12 @@ export interface ReactDevToolsHook {
   onCommitFiberRoot: (
     rendererID: number,
     root: { current: MinimalFiber },
-    priorityLevel?: number
+    priorityLevel?: number,
   ) => void;
   onCommitFiberUnmount: (rendererID: number, fiber: MinimalFiber) => void;
   onPostCommitFiberRoot?: (
     rendererID: number,
-    root: { current: MinimalFiber }
+    root: { current: MinimalFiber },
   ) => void;
 }
 
