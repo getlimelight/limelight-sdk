@@ -1,4 +1,9 @@
-import { LimelightConfig, LimelightMessage } from "@/types";
+import {
+  LimelightConfig,
+  LimelightMessage,
+  RequestBridgeConfig,
+  ResponseBridgeConfig,
+} from "@/types";
 import {
   ConsoleInterceptor,
   NetworkInterceptor,
@@ -14,6 +19,7 @@ import {
 } from "@/constants";
 import { createSessionId } from "@/protocol";
 import { StateInterceptor } from "./interceptors/StateInterceptor";
+import { RequestBridge } from "./interceptors/RequestBridge";
 
 class LimelightClient {
   private ws: WebSocket | null = null;
@@ -33,6 +39,7 @@ class LimelightClient {
   private consoleInterceptor: ConsoleInterceptor;
   private renderInterceptor: RenderInterceptor;
   private stateInterceptor: StateInterceptor;
+  private requestBridge: RequestBridge;
 
   constructor() {
     this.networkInterceptor = new NetworkInterceptor(
@@ -52,6 +59,10 @@ class LimelightClient {
       () => this.sessionId,
     );
     this.stateInterceptor = new StateInterceptor(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
+    );
+    this.requestBridge = new RequestBridge(
       this.sendMessage.bind(this),
       () => this.sessionId,
     );
@@ -92,6 +103,7 @@ class LimelightClient {
     }
 
     this.sessionId = createSessionId();
+    this.requestBridge.setConfig(this.config);
 
     try {
       if (this.config.enableNetworkInspector) {
@@ -154,16 +166,15 @@ class LimelightClient {
       if (oldWs.readyState === 1) {
         oldWs.close();
       }
-
       this.ws = null;
     }
+
     const { serverUrl, appName, platform } = this.config;
 
     if (!serverUrl) {
       if (this.config?.enableInternalLogging) {
         console.error("[Limelight] serverUrl missing in configuration.");
       }
-
       return;
     }
 
@@ -203,7 +214,6 @@ class LimelightClient {
       if (this.config?.enableInternalLogging) {
         console.error("[Limelight] Failed to connect:", error);
       }
-
       this.attemptReconnect();
     }
   }
@@ -226,6 +236,7 @@ class LimelightClient {
     }
 
     this.reconnectAttempts++;
+
     const delay = Math.min(
       this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
       30000,
@@ -349,6 +360,7 @@ class LimelightClient {
     this.consoleInterceptor.cleanup();
     this.renderInterceptor.cleanup();
     this.stateInterceptor.cleanup();
+    this.requestBridge.cleanup();
 
     this.reconnectAttempts = 0;
     this.messageQueue = [];
@@ -365,7 +377,40 @@ class LimelightClient {
     this.config = null;
     this.sessionId = "";
   }
+
+  /**
+   * Manually register a request with Limelight.
+   * Use this when your app makes network requests outside of fetch/XHR
+   * (e.g., through native modules).
+   *
+   * @param config - Request configuration
+   * @returns A request ID to use with endRequest() or failRequest()
+   */
+  startRequest(config: RequestBridgeConfig): string {
+    return this.requestBridge.startRequest(config);
+  }
+
+  /**
+   * Complete a manually tracked request with a successful response.
+   *
+   * @param requestId - The ID returned from startRequest()
+   * @param response - Response data
+   */
+  endRequest(requestId: string, response: ResponseBridgeConfig): void {
+    this.requestBridge.endRequest(requestId, response);
+  }
+
+  /**
+   * Complete a manually tracked request with an error.
+   *
+   * @param requestId - The ID returned from startRequest()
+   * @param error - The error that occurred
+   */
+  failRequest(requestId: string, error: Error | string): void {
+    this.requestBridge.failRequest(requestId, error);
+  }
 }
 
 export const Limelight = new LimelightClient();
 export { LimelightClient };
+export type { RequestBridgeConfig, LimelightConfig, LimelightMessage };
