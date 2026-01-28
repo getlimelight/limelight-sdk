@@ -188,7 +188,7 @@ export class RequestBridge {
    * @param requestId The ID returned from startRequest
    * @param error The error object or message
    */
-  failRequest(requestId: string, error: Error | string): void {
+  failRequest(requestId: string, error: unknown): void {
     const pending = this.pendingRequests.get(requestId);
 
     if (!pending) {
