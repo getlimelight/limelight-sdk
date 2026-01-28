@@ -1,6 +1,6 @@
 {
   "name": "@getlimelight/sdk",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "The react native debugger that actually works",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
