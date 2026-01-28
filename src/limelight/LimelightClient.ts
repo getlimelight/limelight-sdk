@@ -406,7 +406,7 @@ class LimelightClient {
    * @param requestId - The ID returned from startRequest()
    * @param error - The error that occurred
    */
-  failRequest(requestId: string, error: Error | string): void {
+  failRequest(requestId: string, error: unknown): void {
     this.requestBridge.failRequest(requestId, error);
   }
 }
