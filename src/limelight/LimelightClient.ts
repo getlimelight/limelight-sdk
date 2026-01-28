@@ -19,7 +19,9 @@ import {
 } from "@/constants";
 import { createSessionId } from "@/protocol";
 import { StateInterceptor } from "./interceptors/StateInterceptor";
-import { RequestBridge } from "./interceptors/RequestBridge";
+import { RequestBridge } from "./bridges/RequestBridge";
+import { CommandHandler } from "./handlers/CommandHandler";
+import { Command } from "@/types/commands";
 
 class LimelightClient {
   private ws: WebSocket | null = null;
@@ -40,6 +42,7 @@ class LimelightClient {
   private renderInterceptor: RenderInterceptor;
   private stateInterceptor: StateInterceptor;
   private requestBridge: RequestBridge;
+  private commandHandler: CommandHandler | null = null;
 
   constructor() {
     this.networkInterceptor = new NetworkInterceptor(
@@ -65,6 +68,11 @@ class LimelightClient {
     this.requestBridge = new RequestBridge(
       this.sendMessage.bind(this),
       () => this.sessionId,
+    );
+    this.commandHandler = new CommandHandler(
+      { render: this.renderInterceptor },
+      this.sendMessage.bind(this),
+      () => this.config,
     );
   }
 
@@ -199,6 +207,17 @@ class LimelightClient {
         this.reconnectAttempts = 0;
         this.flushMessageQueue();
         this.sendMessage(message);
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const command = JSON.parse(event.data) as Command;
+          this.commandHandler?.handle(command);
+        } catch (error) {
+          if (this.config?.enableInternalLogging) {
+            console.error("[Limelight] Failed to parse command:", error);
+          }
+        }
       };
 
       this.ws.onerror = (error) => {

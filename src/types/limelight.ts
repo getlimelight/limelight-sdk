@@ -1,3 +1,4 @@
+import { CommandAckEvent } from "./commands";
 import {
   ConsoleEvent,
   NetworkErrorEvent,
@@ -118,4 +119,5 @@ export type LimelightMessage =
   | RenderSnapshot
   | TransactionEvent
   | StateInitEvent
-  | StateUpdateEvent;
+  | StateUpdateEvent
+  | CommandAckEvent;
