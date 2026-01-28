@@ -1,7 +1,6 @@
 // limelight/CommandHandler.ts
-import { Command, CommandType } from "@/types/commands";
+import { Command, CommandType, LimelightMessage } from "@/types";
 import { RenderInterceptor } from "../interceptors";
-import { LimelightMessage } from "@/types";
 
 export class CommandHandler {
   constructor(

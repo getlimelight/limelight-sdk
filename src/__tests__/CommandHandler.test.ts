@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CommandType } from "@/types/commands";
+import { CommandType } from "@/types";
 import { CommandHandler } from "@/limelight/handlers/CommandHandler";
 
 describe("CommandHandler", () => {
