@@ -5,7 +5,7 @@ import {
   GraphqlOprtation,
   LimelightMessage,
 } from "@/types";
-import { RequestBridge } from "@/limelight/interceptors/RequestBridge";
+import { RequestBridge } from "@/limelight/bridges/RequestBridge";
 
 describe("RequestBridge", () => {
   let bridge: RequestBridge;

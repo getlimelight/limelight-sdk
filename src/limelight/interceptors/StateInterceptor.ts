@@ -62,9 +62,8 @@ export class StateInterceptor {
       return;
     }
 
-    const state = this.getState(store, library);
+    const state = this.getState(store);
 
-    // Send initial state
     const initEvent: StateInitEvent = {
       phase: StatePhase.INIT,
       sessionId: this.getSessionId(),
@@ -75,9 +74,9 @@ export class StateInterceptor {
         state,
       },
     };
+
     this.emitEvent(initEvent);
 
-    // Subscribe to changes
     const unsubscribe = this.subscribe(store, library, name);
 
     this.stores.set(name, { name, library, unsubscribe });
@@ -85,6 +84,8 @@ export class StateInterceptor {
 
   /**
    * Unregister a store and stop listening to changes.
+   * Can be called manually via Limelight.removeStore().
+   * @param name The name of the store to unregister
    */
   unregisterStore(name: string): void {
     const store = this.stores.get(name);
@@ -96,6 +97,7 @@ export class StateInterceptor {
 
   /**
    * Emit an event, applying beforeSend hook if configured
+   * @param event The event to emit
    */
   private emitEvent(event: StateInitEvent | StateUpdateEvent): void {
     if (this.config?.beforeSend) {
@@ -122,6 +124,8 @@ export class StateInterceptor {
 
   /**
    * Detect whether a store is Zustand or Redux
+   * @param store The store to inspect
+   * @return StateLibrary or null if unknown
    */
   private detectLibrary(store: unknown): StateLibrary | null {
     if (!store || (typeof store !== "function" && typeof store !== "object")) {
@@ -165,14 +169,20 @@ export class StateInterceptor {
 
   /**
    * Get current state from a store
+   * @param store The store to get state from
+   * @return The current state
    */
-  private getState(store: unknown, library: StateLibrary): unknown {
+  private getState(store: unknown): unknown {
     const storeAny = store as any;
     return storeAny.getState();
   }
 
   /**
    * Subscribe to store changes
+   * @param store The store to subscribe to
+   * @param library The detected state library
+   * @param storeName The name of the store
+   * @return Unsubscribe function
    */
   private subscribe(
     store: unknown,
@@ -190,6 +200,9 @@ export class StateInterceptor {
 
   /**
    * Subscribe to Zustand store changes
+   * @param store The Zustand store
+   * @param storeName The name of the store
+   * @return Unsubscribe function
    */
   private subscribeZustand(store: any, storeName: string): () => void {
     return store.subscribe((state: unknown, prevState: unknown) => {
@@ -215,6 +228,9 @@ export class StateInterceptor {
 
   /**
    * Subscribe to Redux store changes
+   * @param store The Redux store
+   * @param storeName The name of the store
+   * @return Unsubscribe function
    */
   private subscribeRedux(store: any, storeName: string): () => void {
     let lastAction: StateAction = { type: "@@INIT" };
@@ -256,6 +272,9 @@ export class StateInterceptor {
 
   /**
    * Infer action name from stack trace for Zustand
+   * @param state The new state
+   * @param prevState The previous state
+   * @return Inferred StateAction
    */
   private inferZustandAction(state: unknown, prevState: unknown): StateAction {
     const actionType = this.parseActionFromStack(this.captureStackTrace());
@@ -269,6 +288,8 @@ export class StateInterceptor {
 
   /**
    * Parse function name from stack trace
+   * @param stack The stack trace string
+   * @return The inferred action name
    */
   private parseActionFromStack(stack?: string): string {
     if (!stack) return "set";
@@ -314,6 +335,9 @@ export class StateInterceptor {
 
   /**
    * Compute what keys changed between states (shallow)
+   * @param state The new state
+   * @param prevState The previous state
+   * @return Partial state with only changed keys
    */
   private computePartialState(state: unknown, prevState: unknown): unknown {
     if (
