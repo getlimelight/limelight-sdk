@@ -45,8 +45,10 @@ export class StateInterceptor {
    */
   registerStore(name: string, store: unknown): void {
     if (this.stores.has(name)) {
-      //always log warning if store already registered
-      console.warn(`[Limelight] Store "${name}" already registered`);
+      if (this.config?.enableInternalLogging) {
+        console.warn(`[Limelight] Store "${name}" already registered`);
+      }
+
       return;
     }
 
