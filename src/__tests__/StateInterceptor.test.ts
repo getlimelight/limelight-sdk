@@ -188,6 +188,10 @@ describe("StateInterceptor", () => {
       const consoleSpy = vi.spyOn(console, "warn");
       const store = createMockZustandStore();
 
+      interceptor.setup({
+        enableInternalLogging: true,
+      });
+
       interceptor.registerStore("myStore", store);
       interceptor.registerStore("myStore", store);
 
