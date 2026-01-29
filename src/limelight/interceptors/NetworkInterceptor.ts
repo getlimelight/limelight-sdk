@@ -218,6 +218,10 @@ export class NetworkInterceptor {
         self.sendMessage(responseEvent);
         return response;
       } catch (err) {
+        const isAbort =
+          err instanceof Error &&
+          (err.name === "AbortError" || err.message.includes("aborted"));
+
         const errorMessage = err instanceof Error ? err.message : String(err);
         const errorStack = err instanceof Error ? err.stack : undefined;
 
@@ -225,22 +229,25 @@ export class NetworkInterceptor {
           id: requestId,
           sessionId: self.getSessionId(),
           timestamp: Date.now(),
-          phase: NetworkPhase.ERROR,
+          phase: isAbort ? NetworkPhase.ABORT : NetworkPhase.ERROR,
           networkType: NetworkType.FETCH,
-          errorMessage: errorMessage,
+          errorMessage: isAbort ? "Request aborted" : errorMessage,
           stack: errorStack,
         };
 
         if (self.config?.beforeSend) {
           const modifiedEvent = self.config.beforeSend(errorEvent);
 
-          if (modifiedEvent && modifiedEvent.phase === NetworkPhase.ERROR) {
+          if (
+            modifiedEvent &&
+            (modifiedEvent.phase === NetworkPhase.ERROR ||
+              modifiedEvent.phase === NetworkPhase.ABORT)
+          ) {
             errorEvent = modifiedEvent;
           }
         }
 
         self.sendMessage(errorEvent);
-
         throw err;
       }
     };

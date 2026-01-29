@@ -20,6 +20,7 @@ export enum NetworkPhase {
   REQUEST = "REQUEST",
   RESPONSE = "RESPONSE",
   ERROR = "ERROR",
+  ABORT = "ABORT",
 }
 
 export enum BodyFormat {
@@ -120,7 +121,7 @@ export interface NetworkResponse extends BaseNetworkEvent {
  * NETWORK ERROR (3rd possible outcome)
  */
 export interface NetworkErrorEvent extends BaseNetworkEvent {
-  phase: NetworkPhase.ERROR;
+  phase: NetworkPhase.ERROR | NetworkPhase.ABORT;
   errorMessage: string;
   stack?: string;
 }

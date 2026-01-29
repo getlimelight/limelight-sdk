@@ -147,7 +147,6 @@ export class XHRInterceptor {
         }
 
         self.sendMessage(requestEvent);
-
         let responseSent = false;
 
         /**
@@ -160,7 +159,7 @@ export class XHRInterceptor {
             });
             data.listeners.clear();
           }
-          // Clear the data to allow GC
+
           delete this._limelightData;
         };
 
@@ -242,7 +241,10 @@ export class XHRInterceptor {
          * Sends an error event.
          * Also sets responseSent to prevent duplicate response events.
          */
-        const sendError = (errorMessage: string) => {
+        const sendError = (
+          errorMessage: string,
+          phase: NetworkPhase.ERROR | NetworkPhase.ABORT = NetworkPhase.ERROR,
+        ) => {
           if (responseSent) return;
           responseSent = true;
 
@@ -250,7 +252,7 @@ export class XHRInterceptor {
             id: data.id,
             sessionId: self.getSessionId(),
             timestamp: Date.now(),
-            phase: NetworkPhase.ERROR,
+            phase: phase,
             networkType: NetworkType.XHR,
             errorMessage: errorMessage,
           };
@@ -286,7 +288,7 @@ export class XHRInterceptor {
         };
 
         const abortHandler = function (this: XMLHttpRequest) {
-          sendError("Request aborted");
+          sendError("Request aborted", NetworkPhase.ABORT);
           cleanup.call(this);
         };
 

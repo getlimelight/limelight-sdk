@@ -39,14 +39,14 @@ describe("XHRInterceptor", () => {
       expect.objectContaining({
         phase: "REQUEST",
         method: "GET",
-      })
+      }),
     );
 
     expect(sendMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         phase: "RESPONSE",
         status: 200,
-      })
+      }),
     );
   });
 
@@ -89,7 +89,7 @@ describe("XHRInterceptor", () => {
       expect.objectContaining({
         phase: "ERROR",
         errorMessage: "Network request failed",
-      })
+      }),
     );
   });
 
@@ -113,9 +113,9 @@ describe("XHRInterceptor", () => {
 
     expect(sendMessageSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        phase: "ERROR",
+        phase: "ABORT",
         errorMessage: "Request aborted",
-      })
+      }),
     );
   });
 

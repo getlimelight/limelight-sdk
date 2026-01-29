@@ -233,14 +233,16 @@ export class RenderInterceptor {
   ): void {
     if (!fiber) return;
 
+    let currentParentId = parentComponentId;
+
     if (this.isUserComponent(fiber) && this.didFiberRender(fiber)) {
       const componentId = this.getOrCreateComponentId(fiber);
       this.accumulateRender(fiber, componentId, parentComponentId, depth);
       this.currentCommitComponents.add(componentId);
-      parentComponentId = componentId;
+      currentParentId = componentId;
     }
 
-    this.walkFiberTree(fiber.child, parentComponentId, depth + 1);
+    this.walkFiberTree(fiber.child, currentParentId, depth + 1);
     this.walkFiberTree(fiber.sibling, parentComponentId, depth);
   }
 
