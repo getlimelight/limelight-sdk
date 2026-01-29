@@ -17,7 +17,6 @@ import {
   createEmptyPropChangeStats,
   generateRenderId,
   getCurrentTransactionId,
-  isDevelopment,
 } from "@/helpers";
 import { createEmptyCauseBreakdown } from "@/helpers/render/createEmptyCauseBreakdown";
 import { RENDER_THRESHOLDS } from "@/constants";
@@ -54,7 +53,7 @@ export class RenderInterceptor {
 
   constructor(
     sendMessage: (message: LimelightMessage) => void,
-    getSessionId: () => string
+    getSessionId: () => string,
   ) {
     this.sendMessage = sendMessage;
     this.getSessionId = getSessionId;
@@ -62,14 +61,20 @@ export class RenderInterceptor {
 
   setup(config: LimelightConfig): void {
     if (this.isSetup) {
-      console.warn("[Limelight] Render interceptor already set up");
+      if (this.config?.enableInternalLogging) {
+        console.warn("[Limelight] Render interceptor already set up");
+      }
+
       return;
     }
 
     this.config = config;
 
     if (!this.installHook()) {
-      console.warn("[Limelight] Failed to install render hook");
+      if (this.config?.enableInternalLogging) {
+        console.warn("[Limelight] Failed to install render hook");
+      }
+
       return;
     }
 
@@ -80,13 +85,17 @@ export class RenderInterceptor {
     this.isSetup = true;
   }
 
+  /**
+   * Installs or wraps the React DevTools global hook.
+   * Returns true if successful, false otherwise.
+   */
   private installHook(): boolean {
     const globalObj =
       typeof window !== "undefined"
         ? window
         : typeof global !== "undefined"
-        ? global
-        : null;
+          ? global
+          : null;
 
     if (!globalObj) return false;
 
@@ -104,6 +113,11 @@ export class RenderInterceptor {
     return true;
   }
 
+  /**
+   * Wraps an existing React DevTools hook to intercept render events.
+   * Preserves original functionality.
+   * @param hook - The existing React DevTools hook
+   */
   private wrapExistingHook(hook: ReactDevToolsHook): void {
     this.originalHook = hook;
     this.originalOnCommitFiberRoot = hook.onCommitFiberRoot?.bind(hook);
@@ -120,6 +134,11 @@ export class RenderInterceptor {
     };
   }
 
+  /**
+   * Creates a new React DevTools hook to intercept render events.
+   * @param globalObj - The global object (window or global)
+   * @param hookKey - The key for the React DevTools hook
+   */
   private createHook(globalObj: any, hookKey: string): void {
     const renderers = new Map<number, any>();
     let rendererIdCounter = 0;
@@ -144,10 +163,12 @@ export class RenderInterceptor {
   /**
    * Handles a fiber root commit - walks tree and ACCUMULATES into profiles.
    * Two-pass: first count components, then accumulate with distributed cost.
+   * @param rendererID - The renderer ID
+   * @param root - The fiber root
    */
   private handleCommitFiberRoot(
     _rendererID: number,
-    root: { current: MinimalFiber }
+    root: { current: MinimalFiber },
   ): void {
     this.currentCommitComponents.clear();
     this.componentsInCurrentCommit = 0;
@@ -156,7 +177,7 @@ export class RenderInterceptor {
       this.countRenderedComponents(root.current);
       this.walkFiberTree(root.current, null, 0);
     } catch (error) {
-      if (isDevelopment()) {
+      if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] Error processing fiber tree:", error);
       }
     }
@@ -164,6 +185,7 @@ export class RenderInterceptor {
 
   /**
    * First pass: count rendered components for cost distribution.
+   * @param fiber - The current fiber node
    */
   private countRenderedComponents(fiber: MinimalFiber | null): void {
     if (!fiber) return;
@@ -176,9 +198,14 @@ export class RenderInterceptor {
     this.countRenderedComponents(fiber.sibling);
   }
 
+  /**
+   * Handles a fiber unmount - marks component as unmounted.
+   * @param rendererID - The renderer ID
+   * @param fiber - The fiber being unmounted
+   */
   private handleCommitFiberUnmount(
     _rendererID: number,
-    fiber: MinimalFiber
+    fiber: MinimalFiber,
   ): void {
     if (!this.isUserComponent(fiber)) return;
 
@@ -195,11 +222,14 @@ export class RenderInterceptor {
 
   /**
    * Walks fiber tree and accumulates render stats into profiles.
+   * @param fiber - The current fiber node
+   * @param parentComponentId - The parent component ID
+   * @param depth - The current depth in the tree
    */
   private walkFiberTree(
     fiber: MinimalFiber | null,
     parentComponentId: string | null,
-    depth: number
+    depth: number,
   ): void {
     if (!fiber) return;
 
@@ -216,12 +246,16 @@ export class RenderInterceptor {
 
   /**
    * Core accumulation logic - this is where we build up the profile.
+   * @param fiber - The current fiber node
+   * @param componentId - The component ID
+   * @param parentComponentId - The parent component ID
+   * @param depth - The current depth in the tree
    */
   private accumulateRender(
     fiber: MinimalFiber,
     componentId: string,
     parentComponentId: string | null,
-    depth: number
+    depth: number,
   ): void {
     const now = Date.now();
     const cause = this.inferRenderCause(fiber, parentComponentId);
@@ -301,11 +335,13 @@ export class RenderInterceptor {
   }
 
   /**
-   * NEW: Accumulate prop change details into the profile.
+   * Accumulate prop change details into the profile.
+   * @param profile - The component profile
+   * @param changes - The list of prop change details
    */
   private accumulatePropChanges(
     profile: ComponentProfile,
-    changes: PropChangeDetail[]
+    changes: PropChangeDetail[],
   ): void {
     const stats = profile.propChangeStats;
 
@@ -319,13 +355,13 @@ export class RenderInterceptor {
 
       stats.changeCount.set(
         change.key,
-        (stats.changeCount.get(change.key) ?? 0) + 1
+        (stats.changeCount.get(change.key) ?? 0) + 1,
       );
 
       if (change.referenceOnly) {
         stats.referenceOnlyCount.set(
           change.key,
-          (stats.referenceOnlyCount.get(change.key) ?? 0) + 1
+          (stats.referenceOnlyCount.get(change.key) ?? 0) + 1,
         );
       }
     }
@@ -338,17 +374,19 @@ export class RenderInterceptor {
         ...changes.slice(
           0,
           RENDER_THRESHOLDS.MAX_PROP_CHANGES_PER_SNAPSHOT -
-            profile.propChangeDelta.length
-        )
+            profile.propChangeDelta.length,
+        ),
       );
     }
   }
 
   /**
-   *  Build prop change snapshot for emission.
+   * Build prop change snapshot for emission.
+   * @param profile - The component profile
+   * @returns The prop change snapshot or undefined
    */
   private buildPropChangeSnapshot(
-    profile: ComponentProfile
+    profile: ComponentProfile,
   ): PropChangeSnapshot | undefined {
     const stats = profile.propChangeStats;
 
@@ -373,13 +411,17 @@ export class RenderInterceptor {
     return { topChangedProps };
   }
 
+  /**
+   * Updates the suspicious flag based on render velocity and count.
+   * @param profile - The component profile
+   */
   private updateSuspiciousFlag(profile: ComponentProfile): void {
     const velocity = this.calculateVelocity(profile);
 
     if (velocity > RENDER_THRESHOLDS.HOT_VELOCITY) {
       profile.isSuspicious = true;
       profile.suspiciousReason = `High render velocity: ${velocity.toFixed(
-        1
+        1,
       )}/sec`;
     } else if (profile.totalRenders > RENDER_THRESHOLDS.HIGH_RENDER_COUNT) {
       profile.isSuspicious = true;
@@ -393,6 +435,8 @@ export class RenderInterceptor {
   /**
    * Calculates renders per second from velocity window.
    * Cheap: just count / window duration, no array operations.
+   * @param profile - The component profile
+   * @returns The calculated velocity
    */
   private calculateVelocity(profile: ComponentProfile): number {
     const now = Date.now();
@@ -408,6 +452,8 @@ export class RenderInterceptor {
 
   /**
    * Emits a snapshot of all profiles with deltas.
+   * Only emits profiles that have significant changes since last emit.
+   * Also emits unmounts.
    */
   private emitSnapshot(): void {
     const now = Date.now();
@@ -510,11 +556,15 @@ export class RenderInterceptor {
   }
 
   /**
-   *  Now returns prop change details when applicable.
+   * Now returns prop change details when applicable.
+   * Infers the cause of the render by comparing current and previous fiber states.
+   * @param fiber - The current fiber node
+   * @param parentComponentId - The parent component ID
+   * @returns The inferred render cause
    */
   private inferRenderCause(
     fiber: MinimalFiber,
-    parentComponentId: string | null
+    parentComponentId: string | null,
   ): {
     type: RenderCauseType;
     confidence: RenderConfidence;
@@ -556,7 +606,6 @@ export class RenderInterceptor {
       };
     }
 
-    // State change
     if (fiber.memoizedState !== alternate.memoizedState) {
       return {
         type: RenderCauseType.STATE_CHANGE,
@@ -580,10 +629,13 @@ export class RenderInterceptor {
   /**
    * Diff props to find which keys changed and whether it's reference-only.
    * This is the key insight generator.
+   * @param prevProps - The previous props
+   * @param nextProps - The next props
+   * @returns List of prop change details
    */
   private diffProps(
     prevProps: Record<string, any> | null,
-    nextProps: Record<string, any> | null
+    nextProps: Record<string, any> | null,
   ): PropChangeDetail[] {
     if (!prevProps || !nextProps) {
       return [];
@@ -620,29 +672,23 @@ export class RenderInterceptor {
   }
 
   /**
-   *  Shallow equality check to determine if a prop is reference-only change.
+   * Shallow equality check to determine if a prop is reference-only change.
    * We only go one level deep to keep it fast.
+   * @param a - The first value
+   * @param b - The second value
+   * @returns True if shallow equal, false otherwise
    */
   private isShallowEqual(a: any, b: any): boolean {
-    // Same reference (already checked, but for safety)
     if (a === b) return true;
 
-    // Different types
     if (typeof a !== typeof b) return false;
 
-    // Null checks
     if (a === null || b === null) return false;
 
-    // Functions - can't easily compare, assume different
-    // But if they're both functions, it's likely a reference-only change
-    // (same callback recreated)
     if (typeof a === "function" && typeof b === "function") {
-      // We can't compare function bodies easily, but this is almost always
-      // a reference-only change (inline callback recreated)
-      return true; // Treat as reference-only
+      return true;
     }
 
-    // Arrays
     if (Array.isArray(a) && Array.isArray(b)) {
       if (a.length !== b.length) return false;
       for (let i = 0; i < a.length; i++) {
@@ -666,6 +712,11 @@ export class RenderInterceptor {
     return a === b;
   }
 
+  /**
+   * Determines if a fiber represents a user-defined component.
+   * @param fiber - The fiber node
+   * @returns True if user component, false otherwise
+   */
   private isUserComponent(fiber: MinimalFiber): boolean {
     const tag = fiber.tag;
     return (
@@ -677,10 +728,20 @@ export class RenderInterceptor {
     );
   }
 
+  /**
+   * Determines if a fiber performed work during the commit.
+   * @param fiber - The fiber node
+   * @returns True if performed work, false otherwise
+   */
   private didFiberRender(fiber: MinimalFiber): boolean {
     return (fiber.flags & FiberFlags.PerformedWork) !== 0;
   }
 
+  /**
+   * Gets or creates a unique component ID for a fiber.
+   * @param fiber - The fiber node
+   * @returns The unique component ID
+   */
   private getOrCreateComponentId(fiber: MinimalFiber): string {
     let id = this.fiberToComponentId.get(fiber);
     if (id) return id;
@@ -698,6 +759,11 @@ export class RenderInterceptor {
     return id;
   }
 
+  /**
+   * Gets the display name of a component from a fiber.
+   * @param fiber - The fiber node
+   * @returns The component name
+   */
   private getComponentName(fiber: MinimalFiber): string {
     const type = fiber.type;
     if (!type) return "Unknown";
@@ -719,6 +785,11 @@ export class RenderInterceptor {
     return "Unknown";
   }
 
+  /**
+   * Gets the component type from a fiber.
+   * @param fiber - The fiber node
+   * @returns The component type
+   */
   private getComponentType(fiber: MinimalFiber): ComponentType {
     switch (fiber.tag) {
       case FiberTag.FunctionComponent:
@@ -756,6 +827,9 @@ export class RenderInterceptor {
     return Array.from(this.profiles.values()).filter((p) => p.isSuspicious);
   }
 
+  /**
+   * Cleans up and restores original hook behavior.
+   */
   cleanup(): void {
     if (!this.isSetup) return;
 
@@ -785,5 +859,16 @@ export class RenderInterceptor {
     this.componentIdCounter = 0;
     this.config = null;
     this.isSetup = false;
+  }
+
+  /**
+   * Resets all collected profiles
+   */
+  resetProfiles(): void {
+    this.profiles.clear();
+    this.fiberToComponentId = new WeakMap<MinimalFiber, string>();
+    this.pendingUnmounts = [];
+    this.currentCommitComponents.clear();
+    this.componentIdCounter = 0;
   }
 }

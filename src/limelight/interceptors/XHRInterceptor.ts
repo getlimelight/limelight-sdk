@@ -40,7 +40,7 @@ export class XHRInterceptor {
 
   constructor(
     private sendMessage: (message: LimelightMessage) => void,
-    private getSessionId: () => string
+    private getSessionId: () => string,
   ) {
     this.originalXHROpen = XMLHttpRequest.prototype.open;
     this.originalXHRSend = XMLHttpRequest.prototype.send;
@@ -57,7 +57,10 @@ export class XHRInterceptor {
    */
   setup(config: LimelightConfig) {
     if (this.isSetup) {
-      console.warn("[Limelight] XHR interceptor already set up");
+      if (this.config?.enableInternalLogging) {
+        console.warn("[Limelight] XHR interceptor already set up");
+      }
+
       return;
     }
     this.isSetup = true;
@@ -77,13 +80,13 @@ export class XHRInterceptor {
 
       return self.originalXHROpen.apply(
         this,
-        arguments as unknown as XHROpenArgs
+        arguments as unknown as XHROpenArgs,
       );
     };
 
     XMLHttpRequest.prototype.setRequestHeader = function (
       header: string,
-      value: string
+      value: string,
     ) {
       if (this._limelightData) {
         this._limelightData.headers[header] = value;
@@ -109,7 +112,7 @@ export class XHRInterceptor {
       if (data) {
         const requestBody = serializeBody(
           body,
-          self.config?.disableBodyCapture
+          self.config?.disableBodyCapture,
         );
 
         let requestEvent: LimelightMessage = {
@@ -135,6 +138,7 @@ export class XHRInterceptor {
           }
 
           if (modifiedEvent.phase !== NetworkPhase.REQUEST) {
+            // always log an error if beforeSend returns wrong type
             console.error("[Limelight] beforeSend must return same event type");
             return self.originalXHRSend.apply(this, arguments as any);
           }
@@ -171,7 +175,7 @@ export class XHRInterceptor {
           const endTime = Date.now();
           const duration = endTime - data.startTime;
           const responseHeaders = self.parseResponseHeaders(
-            this.getAllResponseHeaders()
+            this.getAllResponseHeaders(),
           );
 
           let responseData;
@@ -193,7 +197,7 @@ export class XHRInterceptor {
 
           const responseBody = serializeBody(
             responseData,
-            self.config?.disableBodyCapture
+            self.config?.disableBodyCapture,
           );
 
           let responseEvent: LimelightMessage = {
@@ -220,8 +224,9 @@ export class XHRInterceptor {
             }
 
             if (modifiedEvent.phase !== NetworkPhase.RESPONSE) {
+              //always log an error if beforeSend returns wrong type
               console.error(
-                "[Limelight] beforeSend must return same event type"
+                "[Limelight] beforeSend must return same event type",
               );
               return;
             }
@@ -340,7 +345,10 @@ export class XHRInterceptor {
    */
   cleanup() {
     if (!this.isSetup) {
-      console.warn("[Limelight] XHR interceptor not set up");
+      if (this.config?.enableInternalLogging) {
+        console.warn("[Limelight] XHR interceptor not set up");
+      }
+
       return;
     }
     this.isSetup = false;

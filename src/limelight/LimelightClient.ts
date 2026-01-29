@@ -1,4 +1,9 @@
-import { LimelightConfig, LimelightMessage } from "@/types";
+import {
+  LimelightConfig,
+  LimelightMessage,
+  RequestBridgeConfig,
+  ResponseBridgeConfig,
+} from "@/types";
 import {
   ConsoleInterceptor,
   NetworkInterceptor,
@@ -13,6 +18,10 @@ import {
   WS_PATH,
 } from "@/constants";
 import { createSessionId } from "@/protocol";
+import { StateInterceptor } from "./interceptors/StateInterceptor";
+import { RequestBridge } from "./bridges/RequestBridge";
+import { CommandHandler } from "./handlers/CommandHandler";
+import { Command } from "@/types/commands";
 
 class LimelightClient {
   private ws: WebSocket | null = null;
@@ -31,23 +40,39 @@ class LimelightClient {
   private xhrInterceptor: XHRInterceptor;
   private consoleInterceptor: ConsoleInterceptor;
   private renderInterceptor: RenderInterceptor;
+  private stateInterceptor: StateInterceptor;
+  private requestBridge: RequestBridge;
+  private commandHandler: CommandHandler | null = null;
 
   constructor() {
     this.networkInterceptor = new NetworkInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.xhrInterceptor = new XHRInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.consoleInterceptor = new ConsoleInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
     );
     this.renderInterceptor = new RenderInterceptor(
       this.sendMessage.bind(this),
-      () => this.sessionId
+      () => this.sessionId,
+    );
+    this.stateInterceptor = new StateInterceptor(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
+    );
+    this.requestBridge = new RequestBridge(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
+    );
+    this.commandHandler = new CommandHandler(
+      { render: this.renderInterceptor },
+      this.sendMessage.bind(this),
+      () => this.config,
     );
   }
 
@@ -65,8 +90,8 @@ class LimelightClient {
     const configServerUrl = config?.serverUrl
       ? config.serverUrl
       : config?.projectKey
-      ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
-      : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
+        ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
+        : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
 
     this.config = {
       ...config,
@@ -77,6 +102,8 @@ class LimelightClient {
       enableConsole: config?.enableConsole ?? true,
       enableGraphQL: config?.enableGraphQL ?? true,
       enableRenderInspector: config?.enableRenderInspector ?? true,
+      enableStateInspector: config?.enableStateInspector ?? true,
+      enableInternalLogging: config?.enableInternalLogging ?? false,
     };
 
     if (!this.config?.enabled) {
@@ -84,6 +111,7 @@ class LimelightClient {
     }
 
     this.sessionId = createSessionId();
+    this.requestBridge.setConfig(this.config);
 
     try {
       if (this.config.enableNetworkInspector) {
@@ -98,8 +126,14 @@ class LimelightClient {
       if (this.config.enableRenderInspector) {
         this.renderInterceptor.setup(this.config);
       }
+
+      if (this.config.stores && this.config.enableStateInspector) {
+        this.stateInterceptor.setup(this.config);
+      }
     } catch (error) {
-      console.error("[Limelight] Failed to setup interceptors:", error);
+      if (this.config?.enableInternalLogging) {
+        console.error("[Limelight] Failed to setup interceptors:", error);
+      }
     }
   }
 
@@ -122,7 +156,10 @@ class LimelightClient {
     }
 
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.warn("[Limelight] Already connected. Call disconnect() first.");
+      if (this.config?.enableInternalLogging) {
+        console.warn("[Limelight] Already connected. Call disconnect() first.");
+      }
+
       return;
     }
 
@@ -137,13 +174,15 @@ class LimelightClient {
       if (oldWs.readyState === 1) {
         oldWs.close();
       }
-
       this.ws = null;
     }
+
     const { serverUrl, appName, platform } = this.config;
 
     if (!serverUrl) {
-      console.error("[Limelight] serverUrl missing in configuration.");
+      if (this.config?.enableInternalLogging) {
+        console.error("[Limelight] serverUrl missing in configuration.");
+      }
       return;
     }
 
@@ -170,15 +209,30 @@ class LimelightClient {
         this.sendMessage(message);
       };
 
+      this.ws.onmessage = (event) => {
+        try {
+          const command = JSON.parse(event.data) as Command;
+          this.commandHandler?.handle(command);
+        } catch (error) {
+          if (this.config?.enableInternalLogging) {
+            console.error("[Limelight] Failed to parse command:", error);
+          }
+        }
+      };
+
       this.ws.onerror = (error) => {
-        console.error("[Limelight] WebSocket error:", error);
+        if (this.config?.enableInternalLogging) {
+          console.error("[Limelight] WebSocket error:", error);
+        }
       };
 
       this.ws.onclose = () => {
         this.attemptReconnect();
       };
     } catch (error) {
-      console.error("[Limelight] Failed to connect:", error);
+      if (this.config?.enableInternalLogging) {
+        console.error("[Limelight] Failed to connect:", error);
+      }
       this.attemptReconnect();
     }
   }
@@ -201,9 +255,10 @@ class LimelightClient {
     }
 
     this.reconnectAttempts++;
+
     const delay = Math.min(
       this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
-      30000
+      30000,
     );
 
     this.reconnectTimer = setTimeout(() => {
@@ -226,7 +281,9 @@ class LimelightClient {
       try {
         this.ws.send(safeStringify(message));
       } catch (error) {
-        console.error("[Limelight] Failed to send queued message:", error);
+        if (this.config?.enableInternalLogging) {
+          console.error("[Limelight] Failed to send queued message:", error);
+        }
       }
     }
   }
@@ -247,7 +304,10 @@ class LimelightClient {
         try {
           this.ws.send(safeStringify(message));
         } catch (error) {
-          console.error("[Limelight] Failed to send message:", error);
+          if (this.config?.enableInternalLogging) {
+            console.error("[Limelight] Failed to send message:", error);
+          }
+
           this.messageQueue.push(message);
         }
       } else {
@@ -255,9 +315,15 @@ class LimelightClient {
       }
     } else {
       if (this.messageQueue.length >= this.maxQueueSize) {
-        console.warn("[Limelight] Message queue full, dropping oldest message");
+        if (this.config?.enableInternalLogging) {
+          console.warn(
+            "[Limelight] Message queue full, dropping oldest message",
+          );
+        }
+
         this.messageQueue.shift();
       }
+
       this.messageQueue.push(message);
     }
   }
@@ -303,7 +369,6 @@ class LimelightClient {
       this.ws = null;
     }
 
-    // Clear timers and interceptors...
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -313,6 +378,8 @@ class LimelightClient {
     this.xhrInterceptor.cleanup();
     this.consoleInterceptor.cleanup();
     this.renderInterceptor.cleanup();
+    this.stateInterceptor.cleanup();
+    this.requestBridge.cleanup();
 
     this.reconnectAttempts = 0;
     this.messageQueue = [];
@@ -329,7 +396,40 @@ class LimelightClient {
     this.config = null;
     this.sessionId = "";
   }
+
+  /**
+   * Manually register a request with Limelight.
+   * Use this when your app makes network requests outside of fetch/XHR
+   * (e.g., through native modules).
+   *
+   * @param config - Request configuration
+   * @returns A request ID to use with endRequest() or failRequest()
+   */
+  startRequest(config: RequestBridgeConfig): string {
+    return this.requestBridge.startRequest(config);
+  }
+
+  /**
+   * Complete a manually tracked request with a successful response.
+   *
+   * @param requestId - The ID returned from startRequest()
+   * @param response - Response data
+   */
+  endRequest(requestId: string, response: ResponseBridgeConfig): void {
+    this.requestBridge.endRequest(requestId, response);
+  }
+
+  /**
+   * Complete a manually tracked request with an error.
+   *
+   * @param requestId - The ID returned from startRequest()
+   * @param error - The error that occurred
+   */
+  failRequest(requestId: string, error: unknown): void {
+    this.requestBridge.failRequest(requestId, error);
+  }
 }
 
 export const Limelight = new LimelightClient();
 export { LimelightClient };
+export type { RequestBridgeConfig, LimelightConfig, LimelightMessage };

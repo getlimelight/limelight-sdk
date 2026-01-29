@@ -1,6 +1,6 @@
 {
   "name": "@getlimelight/sdk",
-  "version": "0.3.1",
+  "version": "0.5.1",
   "description": "The react native debugger that actually works",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -15,11 +15,12 @@
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "test": "vitest",
+    "publish": "npm publish --access public",
     "test:coverage": "vitest --coverage",
     "test:ci": "vitest run --coverage",
     "prepublishOnly": "npm run clean && npm run build && npm run test:ci",
     "watch": "tsup src/index.ts --format cjs,esm --dts --out-dir dist --watch",
-    "yalc:publish": "yalc publish",
+    "yalc:publish": "yalc publish --no-scripts --private",
     "yalc:push": "yalc push --private",
     "yalc:watch": "tsup src/index.ts --format cjs,esm --dts --out-dir dist --watch & chokidar 'dist/**/*' -c 'yalc push'"
   },

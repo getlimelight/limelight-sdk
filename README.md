@@ -1,25 +1,23 @@
 # Limelight SDK
 
-> **Chrome DevTools for React Native** - Real-time debugging with GraphQL-first network inspection, console streaming, and intelligent issue detection.
+> **Chrome DevTools for React Native** - Real-time debugging with state inspection, network monitoring, console streaming, and render tracking.
 
 [![npm version](https://img.shields.io/npm/v/@getlimelight/sdk.svg)](https://www.npmjs.com/package/@getlimelight/sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 
-## Official documentation
+## Documentation
 
-Read the full docs at **[docs.getlimelight.io](https://docs.getlimelight.io)**.
+📚 **Full documentation at [docs.getlimelight.io](https://docs.getlimelight.io)**
 
 ## Features
 
-- 🙂 **Find why things re-render** - Get detailed information on what is causing your app to render
-- 🔍 **Network Inspection** - Capture and analyze all network requests (fetch & XMLHttpRequest)
-- 🎯 **GraphQL-First** - Automatic GraphQL operation detection, complexity analysis, and query parsing
-- 📊 **Console Streaming** - Real-time console logs with source detection and stack traces
-- 🛡️ **Privacy-First** - Automatic redaction of sensitive headers and configurable data filtering
-- ⚡ **Zero Config** - Works out of the box with sensible defaults
-- 🎨 **Type Safe** - Full TypeScript support with comprehensive type definitions
-- 🔌 **Framework Agnostic** - Works with React Native, Expo, and web applications
+- 🔮 **State Inspection** - Debug Zustand and Redux stores in real-time
+- 🔍 **Network Monitoring** - Inspect all HTTP requests with GraphQL-first support
+- 📊 **Console Streaming** - View logs with stack traces and source detection
+- ⚡ **Render Tracking** - Find why components re-render
+- 🛡️ **Privacy-First** - Automatic redaction of sensitive data
+- 🎨 **Zero Config** - Works out of the box
 
 ## Installation
 
@@ -27,460 +25,84 @@ Read the full docs at **[docs.getlimelight.io](https://docs.getlimelight.io)**.
 npm install @getlimelight/sdk
 ```
 
-```bash
-yarn add @getlimelight/sdk
-```
-
-```bash
-pnpm add @getlimelight/sdk
-```
-
 ## Quick Start
 
-### Basic Usage for the desktop app
+### Desktop App
 
 ```typescript
 import { Limelight } from "@getlimelight/sdk";
 
-// That's it! One line to start debugging
 Limelight.connect();
 ```
 
-### Provide your projectKey to use the web Limelight app
+### Web App (with project key)
 
 ```typescript
 import { Limelight } from "@getlimelight/sdk";
 
-Limelight.connect({ projectKey: "project-123" });
+Limelight.connect({
+  projectKey: "your-project-key",
+});
 ```
+
+### With State Inspection
+
+```typescript
+import { Limelight } from "@getlimelight/sdk";
+import { useUserStore } from "./stores/user";
+import { useCartStore } from "./stores/cart";
+
+Limelight.connect({
+  stores: {
+    user: useUserStore,
+    cart: useCartStore,
+  },
+});
+```
+
+Works with **Zustand** and **Redux** out of the box.
 
 ## Configuration
 
-### Configuration Options
-
 ```typescript
-import { Limelight } from '@getlimelight/sdk';
-
 Limelight.connect({
-  // Required to connect to the Limelight web app. Your project key can be found in organization settings.
-  projectKey?: string;
+  // Connect to web app (optional for desktop)
+  projectKey: "your-project-key",
 
-  // Optional: Platform identifier (auto-detected)
-  platform?: string;
-
-  // Optional: Custom server URL (defaults to ws://localhost:8080)
-  serverUrl?: string;
-
-  // Optional: Your app name
-  appName?: string;
-
-  // Optional: Enable/disable the SDK (defaults to true)
-  enabled?: boolean;
-
-  // Optional: Enable network request interception (defaults to true)
-  enableNetworkInspector?: boolean;
-
-  // Optional: Enable console log capture (defaults to true)
-  enableConsole?: boolean;
-
-  // Optional: Enable GraphQL operation detection (defaults to true)
-  enableGraphQL?: boolean;
-
-  // Optional: Disable request/response body capture (defaults to false)
-  disableBodyCapture?: boolean;
-
-  // Optional: Filter or modify events before sending
-  beforeSend?: (event: LimelightMessage) => LimelightMessage | null;
-});
-```
-
-### Example: Production-Safe Setup
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-Limelight.connect({
-  projectKey: "project-123",
-  enabled: __DEV__, // Only enable in development
-  appName: "MyAwesomeApp",
-});
-```
-
-### Example: Custom Server URL
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-Limelight.connect({
-  serverUrl: "ws://192.168.1.100:8080", // Your computer's IP
-  appName: "MyApp",
-});
-```
-
-### beforeSend Hook
-
-Filter or modify events before they're sent to the server:
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-Limelight.connect({
-  beforeSend: (event) => {
-    // Filter out specific URLs
-    if (event.phase === "NETWORK" && event.url.includes("/analytics")) {
-      return null; // Don't send this event
-    }
-
-    // Redact sensitive data from console logs
-    if (event.phase === "CONSOLE") {
-      event.args = event.args.map((arg) =>
-        typeof arg === "string"
-          ? arg.replace(/password=\w+/g, "password=***")
-          : arg
-      );
-    }
-
-    return event;
+  // State stores to inspect
+  stores: {
+    user: useUserStore,
+    cart: useCartStore,
   },
-});
-```
 
-## What Gets Captured
-
-### Network Requests
-
-- ✅ Fetch API requests
-- ✅ XMLHttpRequest (XHR)
-- ✅ Request/response headers
-- ✅ Request/response bodies
-- ✅ GraphQL operations (queries, mutations, subscriptions)
-- ✅ GraphQL complexity analysis
-- ✅ Request timing and duration
-- ✅ Error responses
-
-**Automatically Redacted Headers:**
-
-- `authorization`
-- `cookie`
-- `x-api-key`
-- `x-auth-token`
-- And more...
-
-### Console Logs
-
-- ✅ All console methods (log, warn, error, info, debug, trace)
-- ✅ Stack traces
-- ✅ Source detection (app, library, React Native, native)
-- ✅ Timestamps
-- ✅ Argument serialization (with circular reference handling)
-
-### GraphQL Support
-
-Limelight automatically detects and parses GraphQL operations:
-
-```typescript
-// This request will be detected as a GraphQL query
-fetch("/graphql", {
-  method: "POST",
-  body: JSON.stringify({
-    query: `
-      query GetUser($id: ID!) {
-        user(id: $id) {
-          name
-          email
-        }
-      }
-    `,
-    variables: { id: "123" },
-  }),
-});
-
-// Limelight captures:
-// - Operation type (query/mutation/subscription)
-// - Operation name (GetUser)
-// - Query complexity
-// - Variables
-// - Response data
-```
-
-## API Reference
-
-### Limelight
-
-#### Methods
-
-##### `Limelight.connect(config?: LimelightConfig): void`
-
-Connects to the Limelight server and starts intercepting network requests and console logs.
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-// Minimal usage
-Limelight.connect({ projectKey: "project-123" });
-
-// With configuration
-Limelight.connect({
+  // Feature flags (all default to true)
   enabled: __DEV__,
-  appName: "MyApp",
-  projectKey: "project-123",
-});
-```
+  enableNetworkInspector: true,
+  enableConsole: true,
+  enableStateInspector: true,
+  enableRenderInspector: true,
 
-##### `Limelight.disconnect(): void`
-
-Disconnects from the Limelight server and stops all interception.
-
-```typescript
-Limelight.disconnect();
-```
-
-## Event Types
-
-### Network Events
-
-```typescript
-interface NetworkEvent {
-  id: string;
-  phase: "NETWORK_REQUEST" | "NETWORK_RESPONSE";
-  type: "NETWORK";
-  timestamp: number;
-  sessionId: string;
-  url: string;
-  method: string;
-  headers: Record<string, string>;
-  body?: string;
-  status?: number;
-  duration?: number;
-  isGraphQL?: boolean;
-  graphQLOperation?: {
-    type: "query" | "mutation" | "subscription";
-    name: string;
-    complexity: number;
-  };
-}
-```
-
-### Console Events
-
-```typescript
-interface ConsoleEvent {
-  id: string;
-  phase: "CONSOLE";
-  type: "CONSOLE";
-  level: "log" | "warn" | "error" | "info" | "debug" | "trace";
-  timestamp: number;
-  sessionId: string;
-  source: "APP" | "LIBRARY" | "REACT_NATIVE" | "NATIVE";
-  args: string[];
-  stackTrace?: string;
-}
-```
-
-## Advanced Usage
-
-### Disable Specific Features
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-Limelight.connect({
-  projectKey: "project-123",
-  enableNetworkInspector: true, // Capture network requests
-  enableConsole: true, // Capture console logs
-  enableGraphQL: false, // Disable GraphQL parsing
-  disableBodyCapture: false, // Capture request/response bodies
-});
-```
-
-### Environment-Specific Configuration
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-const getConfig = () => {
-  if (process.env.NODE_ENV === "production") {
-    return { enabled: false };
-  }
-
-  if (process.env.STAGING === "true") {
-    return {
-      serverUrl: "wss://limelight-staging.yourcompany.com",
-      enabled: true,
-    };
-  }
-
-  return {
-    projectKey: "project-123",
-    serverUrl: "ws://localhost:8080",
-    enabled: true,
-  };
-};
-
-Limelight.connect(getConfig());
-```
-
-### Filtering Sensitive Routes
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-const SENSITIVE_ROUTES = ["/auth", "/payment", "/checkout"];
-
-Limelight.connect({
+  // Filter or modify events
   beforeSend: (event) => {
-    if (event.phase === "NETWORK" || event.phase === "NETWORK_REQUEST") {
-      const isSensitive = SENSITIVE_ROUTES.some((route) =>
-        event.url.includes(route)
-      );
-
-      if (isSensitive) {
-        return null; // Don't send sensitive requests
-      }
-    }
-
+    // Return null to filter out, or modify and return
     return event;
   },
 });
 ```
 
-## TypeScript Support
+## Learn More
 
-Limelight is written in TypeScript and provides full type definitions:
-
-```typescript
-import {
-  Limelight,
-  LimelightConfig,
-  LimelightMessage,
-  NetworkEvent,
-  ConsoleEvent,
-} from "@getlimelight/sdk";
-
-const config: LimelightConfig = {
-  enabled: __DEV__,
-  appName: "MyApp",
-  beforeSend: (event: LimelightMessage) => {
-    // Full type safety
-    if (event.phase === "NETWORK") {
-      console.log(event.url); // TypeScript knows this exists
-    }
-
-    return event;
-  },
-};
-
-Limelight.connect(config);
-```
-
-## Performance
-
-Limelight is designed to have minimal performance impact:
-
-- **Non-blocking**: All network interception happens asynchronously
-- **Efficient serialization**: Smart stringification with circular reference handling
-- **Message queuing**: Buffers messages when disconnected to prevent blocking
-- **Configurable depth limits**: Prevents deep object traversal overhead
-- **Production safe**: Easy to disable in production builds
-
-## Security & Privacy
-
-### Automatic Redaction
-
-Limelight automatically redacts sensitive headers:
-
-- Authorization tokens
-- API keys
-- Cookies
-- Session tokens
-
-### Custom Filtering
-
-Use the `beforeSend` hook to implement custom privacy rules:
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-Limelight.connect({
-  beforeSend: (event) => {
-    // Remove PII from request bodies
-    if (event.phase === "NETWORK_REQUEST" && event.body) {
-      try {
-        const body = JSON.parse(event.body);
-        delete body.ssn;
-        delete body.creditCard;
-        event.body = JSON.stringify(body);
-      } catch {
-        // Not JSON, leave as-is
-      }
-    }
-    return event;
-  },
-});
-```
-
-### Disable Body Capture
-
-For maximum privacy, disable request/response body capture entirely:
-
-```typescript
-Limelight.connect({
-  projectKey: "project-123",
-  disableBodyCapture: true, // Only capture headers and metadata
-});
-```
-
-## Troubleshooting
-
-### Connection Issues
-
-If you're having trouble connecting:
-
-1. **Check your server is running** - Make sure the Limelight server is running on the specified port
-2. **Verify the URL** - Default is `ws://localhost:8080`, but you may need your computer's IP address for physical devices
-3. **Enable in config** - Ensure `enabled: true` (or omit it, as it defaults to true)
-
-```typescript
-import { Limelight } from "@getlimelight/sdk";
-
-// For physical devices, use your computer's IP
-Limelight.connect({
-  projectKey: "project-123",
-  serverUrl: "ws://192.168.1.100:8080", // Replace with your IP
-  enabled: true,
-});
-```
-
-### Not Seeing Network Requests
-
-1. Make sure `enableNetworkInspector` is not set to `false`
-2. Ensure `Limelight.connect()` is called early in your app
-3. Check if `beforeSend` is filtering out requests
-
-### Console Logs Not Appearing
-
-1. Ensure `enableConsole` is not set to `false`
-2. Verify `Limelight.connect()` is called before logs occur
-3. Check the WebSocket connection is established
-
-## Examples
-
-See the `/examples` directory for complete working examples:
-
-- Basic React Native app
-- Expo app with environment configuration
-- Next.js web application
-- Custom filtering and privacy controls
+- [Quick Start Guide](https://docs.getlimelight.io/quickstart)
+- [State Inspection](https://docs.getlimelight.io/features/state)
+- [Network Monitoring](https://docs.getlimelight.io/features/network)
+- [Console Streaming](https://docs.getlimelight.io/features/console)
+- [Render Tracking](https://docs.getlimelight.io/features/renders)
+- [Configuration Reference](https://docs.getlimelight.io/configuration)
 
 ## License
 
-MIT © LIMELIGHT
-
-## Support
-
-- 📧 Email: hello@getlimelight.io
-- 🐛 Issues: [GitHub Issues](https://github.com/getlimelight/limelight/issues)
+MIT © Limelight
 
 ---
 
-Built with ❤️ for React Native developers
+[Documentation](https://docs.getlimelight.io) · [GitHub](https://github.com/getlimelight/limelight) · [Issues](https://github.com/getlimelight/limelight/issues)

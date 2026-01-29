@@ -19,12 +19,13 @@ import { generateRequestId } from "@/protocol";
 
 export class NetworkInterceptor {
   private originalFetch: typeof fetch;
+
   private config: LimelightConfig | null = null;
   private isSetup = false;
 
   constructor(
     private sendMessage: (message: LimelightMessage) => void,
-    private getSessionId: () => string
+    private getSessionId: () => string,
   ) {
     this.originalFetch = global.fetch;
   }
@@ -38,7 +39,10 @@ export class NetworkInterceptor {
    */
   setup(config: LimelightConfig) {
     if (this.isSetup) {
-      console.warn("[Limelight] Network interceptor already set up");
+      if (this.config?.enableInternalLogging) {
+        console.warn("[Limelight] Network interceptor already set up");
+      }
+
       return;
     }
     this.isSetup = true;
@@ -48,7 +52,7 @@ export class NetworkInterceptor {
 
     global.fetch = async function (
       input: string | Request | URL,
-      init: RequestInit = {}
+      init: RequestInit = {},
     ): Promise<Response> {
       const requestId = generateRequestId();
       const startTime = Date.now();
@@ -57,8 +61,8 @@ export class NetworkInterceptor {
         typeof input === "string"
           ? input
           : input instanceof URL
-          ? input.toString()
-          : input.url;
+            ? input.toString()
+            : input.url;
 
       const method = (init.method || "GET") as HttpMethod;
 
@@ -97,15 +101,18 @@ export class NetworkInterceptor {
           }
         } catch {
           requestBodyToSerialize = undefined;
-          console.warn(
-            "[Limelight] Failed to read request body from Request object"
-          );
+
+          if (self.config?.enableInternalLogging) {
+            console.warn(
+              "[Limelight] Failed to read request body from Request object",
+            );
+          }
         }
       }
 
       const requestBody = serializeBody(
         requestBodyToSerialize,
-        self.config?.disableBodyCapture
+        self.config?.disableBodyCapture,
       );
 
       let graphqlData: NetworkRequest["graphql"] = undefined;
@@ -142,6 +149,7 @@ export class NetworkInterceptor {
         }
 
         if (modifiedEvent.phase !== NetworkPhase.REQUEST) {
+          // always log an error if beforeSend returns wrong type
           console.error("[Limelight] beforeSend must return same event type");
           return self.originalFetch(input, modifiedInit);
         }
@@ -172,7 +180,7 @@ export class NetworkInterceptor {
 
         const responseBody = serializeBody(
           responseText,
-          self.config?.disableBodyCapture
+          self.config?.disableBodyCapture,
         );
 
         let responseEvent: LimelightMessage = {
@@ -199,6 +207,7 @@ export class NetworkInterceptor {
           }
 
           if (modifiedEvent.phase !== NetworkPhase.RESPONSE) {
+            // always log an error if beforeSend returns wrong type
             console.error("[Limelight] beforeSend must return same event type");
             return response;
           }
@@ -243,7 +252,10 @@ export class NetworkInterceptor {
    */
   cleanup() {
     if (!this.isSetup) {
-      console.warn("[Limelight] Network interceptor not set up");
+      if (this.config?.enableInternalLogging) {
+        console.warn("[Limelight] Network interceptor not set up");
+      }
+
       return;
     }
     this.isSetup = false;

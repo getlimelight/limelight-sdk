@@ -16,7 +16,7 @@ import { LimelightMessage } from "..";
  * @returns A mock MinimalFiber object
  */
 const createMockFiber = (
-  overrides: Partial<MinimalFiber> & { type?: any } = {}
+  overrides: Partial<MinimalFiber> & { type?: any } = {},
 ): MinimalFiber => {
   const defaultType = function TestComponent() {};
   return {
@@ -80,14 +80,14 @@ describe("RenderInterceptor", () => {
   describe("setup", () => {
     it("should install hook when no existing hook present", () => {
       expect(
-        (globalThis as any).__REACT_DEVTOOLS_GLOBAL_HOOK__
+        (globalThis as any).__REACT_DEVTOOLS_GLOBAL_HOOK__,
       ).toBeUndefined();
 
       interceptor.setup({ projectKey: "test-key", enabled: true });
 
       expect((globalThis as any).__REACT_DEVTOOLS_GLOBAL_HOOK__).toBeDefined();
       expect(
-        (globalThis as any).__REACT_DEVTOOLS_GLOBAL_HOOK__.supportsFiber
+        (globalThis as any).__REACT_DEVTOOLS_GLOBAL_HOOK__.supportsFiber,
       ).toBe(true);
     });
 
@@ -114,11 +114,20 @@ describe("RenderInterceptor", () => {
     it("should warn if setup called twice", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-      interceptor.setup({ projectKey: "test-key", enabled: true });
-      interceptor.setup({ projectKey: "test-key", enabled: true });
+      interceptor.setup({
+        projectKey: "test-key",
+        enabled: true,
+        enableInternalLogging: true,
+      });
+
+      interceptor.setup({
+        projectKey: "test-key",
+        enabled: true,
+        enableInternalLogging: true,
+      });
 
       expect(warnSpy).toHaveBeenCalledWith(
-        "[Limelight] Render interceptor already set up"
+        "[Limelight] Render interceptor already set up",
       );
 
       warnSpy.mockRestore();
@@ -317,7 +326,7 @@ describe("RenderInterceptor", () => {
 
       const message = sendMessage.mock.calls[0]![0];
       expect(
-        message.profiles[0].causeBreakdown[RenderCauseType.STATE_CHANGE]
+        message.profiles[0].causeBreakdown[RenderCauseType.STATE_CHANGE],
       ).toBeGreaterThan(0);
     });
   });
@@ -488,7 +497,7 @@ describe("RenderInterceptor", () => {
         sendMessage.mock.calls[sendMessage.mock.calls.length - 1];
       const message = lastCall?.[0];
       const profile = message.profiles.find(
-        (p: any) => p.componentName === "FrequentComponent"
+        (p: any) => p.componentName === "FrequentComponent",
       );
 
       expect(profile.isSuspicious).toBe(true);
@@ -517,7 +526,7 @@ describe("RenderInterceptor", () => {
       expect(sendMessage).toHaveBeenCalled();
       const message = sendMessage.mock.calls[0]![0];
       const unmountedProfile = message.profiles.find(
-        (p: any) => p.renderPhase === RenderPhase.UNMOUNT
+        (p: any) => p.renderPhase === RenderPhase.UNMOUNT,
       );
 
       expect(unmountedProfile).toBeDefined();
@@ -575,7 +584,7 @@ describe("RenderInterceptor", () => {
       const beforeSend = vi.fn((message) => ({
         ...message,
         profiles: message.profiles.filter(
-          (p: any) => !p.componentName.startsWith("Internal")
+          (p: any) => !p.componentName.startsWith("Internal"),
         ),
       }));
 
@@ -602,8 +611,8 @@ describe("RenderInterceptor", () => {
       const message = sendMessage.mock.calls[0]![0];
       expect(
         message.profiles.every(
-          (p: any) => !p.componentName.startsWith("Internal")
-        )
+          (p: any) => !p.componentName.startsWith("Internal"),
+        ),
       ).toBe(true);
     });
   });
@@ -735,7 +744,7 @@ describe("RenderInterceptor", () => {
       expect(suspicious.length).toBeGreaterThan(0);
       expect(suspicious.every((p) => p.isSuspicious)).toBe(true);
       expect(
-        suspicious.some((p) => p.componentName === "SuspiciousComponent")
+        suspicious.some((p) => p.componentName === "SuspiciousComponent"),
       ).toBe(true);
     });
 
@@ -826,7 +835,7 @@ describe("RenderInterceptor", () => {
 
       const message = sendMessage.mock.calls[0]![0];
       const childProfile = message.profiles.find(
-        (p: any) => p.componentName === "Child"
+        (p: any) => p.componentName === "Child",
       );
 
       expect(childProfile.depth).toBeGreaterThan(0);

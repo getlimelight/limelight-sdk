@@ -56,14 +56,14 @@ describe("NetworkInterceptor", () => {
           phase: "REQUEST",
           url: "https://api.example.com/test",
           method: "POST",
-        })
+        }),
       );
 
       expect(sendMessageSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           phase: "RESPONSE",
           status: 200,
-        })
+        }),
       );
     });
 
@@ -71,7 +71,7 @@ describe("NetworkInterceptor", () => {
       mockFetch.mockResolvedValue(
         new Response(JSON.stringify({ data: {} }), {
           headers: { "content-type": "application/json" },
-        })
+        }),
       );
 
       interceptor.setup({
@@ -94,7 +94,7 @@ describe("NetworkInterceptor", () => {
             graphql: expect.objectContaining({
               query: expect.stringContaining("GetUser"),
             }),
-          })
+          }),
         );
       });
     });
@@ -113,14 +113,14 @@ describe("NetworkInterceptor", () => {
       });
 
       await expect(fetch("https://api.example.com/test")).rejects.toThrow(
-        "Network error"
+        "Network error",
       );
 
       expect(sendMessageSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           phase: "ERROR",
           errorMessage: "Network error",
-        })
+        }),
       );
     });
 
@@ -152,14 +152,17 @@ describe("NetworkInterceptor", () => {
       interceptor.setup({
         enableNetworkInspector: true,
         projectKey: "project-123",
+        enableInternalLogging: true,
       });
+
       interceptor.setup({
         enableNetworkInspector: true,
         projectKey: "project-123",
+        enableInternalLogging: true,
       });
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("already set up")
+        expect.stringContaining("already set up"),
       );
     });
   });
@@ -198,7 +201,7 @@ describe("NetworkInterceptor", () => {
       expect(sendMessageSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           url: "https://api.example.com/test",
-        })
+        }),
       );
     });
 
@@ -215,7 +218,7 @@ describe("NetworkInterceptor", () => {
       expect(sendMessageSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           url: "https://api.example.com/test",
-        })
+        }),
       );
     });
 
@@ -235,7 +238,7 @@ describe("NetworkInterceptor", () => {
       });
 
       const requestEvent = sendMessageSpy.mock.calls.find(
-        (call) => call[0].phase === "REQUEST"
+        (call) => call[0].phase === "REQUEST",
       )?.[0];
 
       expect(requestEvent).toBeDefined();
