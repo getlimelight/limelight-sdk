@@ -220,14 +220,16 @@ export class NetworkInterceptor {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         const errorStack = err instanceof Error ? err.stack : undefined;
+        const isAbort =
+          err instanceof DOMException && err.name === "AbortError";
 
         let errorEvent: NetworkErrorEvent = {
           id: requestId,
           sessionId: self.getSessionId(),
           timestamp: Date.now(),
-          phase: NetworkPhase.ERROR,
+          phase: isAbort ? NetworkPhase.ABORT : NetworkPhase.ERROR,
           networkType: NetworkType.FETCH,
-          errorMessage: errorMessage,
+          errorMessage: isAbort ? "Request aborted" : errorMessage,
           stack: errorStack,
         };
 
@@ -240,7 +242,6 @@ export class NetworkInterceptor {
         }
 
         self.sendMessage(errorEvent);
-
         throw err;
       }
     };
