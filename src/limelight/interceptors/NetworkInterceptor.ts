@@ -218,10 +218,12 @@ export class NetworkInterceptor {
         self.sendMessage(responseEvent);
         return response;
       } catch (err) {
+        const isAbort =
+          err instanceof Error &&
+          (err.name === "AbortError" || err.message.includes("aborted"));
+
         const errorMessage = err instanceof Error ? err.message : String(err);
         const errorStack = err instanceof Error ? err.stack : undefined;
-        const isAbort =
-          err instanceof DOMException && err.name === "AbortError";
 
         let errorEvent: NetworkErrorEvent = {
           id: requestId,
@@ -236,7 +238,11 @@ export class NetworkInterceptor {
         if (self.config?.beforeSend) {
           const modifiedEvent = self.config.beforeSend(errorEvent);
 
-          if (modifiedEvent && modifiedEvent.phase === NetworkPhase.ERROR) {
+          if (
+            modifiedEvent &&
+            (modifiedEvent.phase === NetworkPhase.ERROR ||
+              modifiedEvent.phase === NetworkPhase.ABORT)
+          ) {
             errorEvent = modifiedEvent;
           }
         }
