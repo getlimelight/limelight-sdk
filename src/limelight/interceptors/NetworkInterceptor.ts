@@ -8,6 +8,7 @@ import {
   NetworkType,
 } from "@/types";
 import {
+  detectGlobalObject,
   formatRequestName,
   getInitiator,
   isGraphQLRequest,
@@ -22,12 +23,14 @@ export class NetworkInterceptor {
 
   private config: LimelightConfig | null = null;
   private isSetup = false;
+  private globalObject: typeof globalThis;
 
   constructor(
     private sendMessage: (message: LimelightMessage) => void,
     private getSessionId: () => string,
   ) {
-    this.originalFetch = global.fetch;
+    this.globalObject = detectGlobalObject();
+    this.originalFetch = this.globalObject.fetch.bind(this.globalObject);
   }
 
   /**
@@ -45,12 +48,13 @@ export class NetworkInterceptor {
 
       return;
     }
-    this.isSetup = true;
 
+    this.isSetup = true;
     this.config = config;
+
     const self = this;
 
-    global.fetch = async function (
+    this.globalObject.fetch = async function (
       input: string | Request | URL,
       init: RequestInit = {},
     ): Promise<Response> {
@@ -118,8 +122,8 @@ export class NetworkInterceptor {
       let graphqlData: NetworkRequest["graphql"] = undefined;
 
       if (self.config?.enableGraphQL && isGraphQLRequest(url, requestBody)) {
-        // Pass the raw string to the parser, not the serialized object
         const rawBody = requestBody?.raw;
+
         if (rawBody) {
           graphqlData = parseGraphQL(rawBody) ?? undefined;
         }
@@ -265,8 +269,8 @@ export class NetworkInterceptor {
 
       return;
     }
-    this.isSetup = false;
 
-    global.fetch = this.originalFetch;
+    this.isSetup = false;
+    this.globalObject.fetch = this.originalFetch;
   }
 }
