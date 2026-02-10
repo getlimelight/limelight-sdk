@@ -86,6 +86,10 @@ export interface LimelightConfig {
    */
   enableInternalLogging?: boolean;
   /**
+   * Target destination for events. Set to "mcp" to send events to the MCP server at ws://localhost:9229.
+   */
+  target?: "mcp";
+  /**
    * A callback function to modify or filter events before they are sent to the server
    */
   beforeSend?: (event: LimelightMessage) => LimelightMessage | null;

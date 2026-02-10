@@ -13,6 +13,7 @@ import {
 import { isDevelopment, safeStringify } from "@/helpers";
 import {
   LIMELIGHT_DESKTOP_WSS_URL,
+  LIMELIGHT_MCP_WS_URL,
   LIMELIGHT_WEB_WSS_URL,
   SDK_VERSION,
   WS_PATH,
@@ -89,9 +90,11 @@ class LimelightClient {
 
     const configServerUrl = config?.serverUrl
       ? config.serverUrl
-      : config?.projectKey
-        ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
-        : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
+      : config?.target === "mcp"
+        ? LIMELIGHT_MCP_WS_URL
+        : config?.projectKey
+          ? `${LIMELIGHT_WEB_WSS_URL}${WS_PATH}`
+          : `${LIMELIGHT_DESKTOP_WSS_URL}${WS_PATH}`;
 
     this.config = {
       ...config,
