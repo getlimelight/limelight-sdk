@@ -13,6 +13,7 @@ export enum NetworkType {
   FETCH = "fetch",
   XHR = "xhr",
   GRAPHQL = "graphql",
+  INCOMING = "incoming",
 }
 
 export enum NetworkPhase {

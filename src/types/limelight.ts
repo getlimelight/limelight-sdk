@@ -36,9 +36,9 @@ export interface LimelightConfig {
    */
   projectKey?: string;
   /**
-   * The platform of the application (e.g., "ios", "android").
+   * The platform of the application. Auto-detected if not provided.
    */
-  platform?: string;
+  platform?: "ios" | "android" | "web" | "react-native" | "node" | (string & {});
   /**
    * The URL of the Limelight server to connect to. If not provided, it falls back to the local wss server url if there is no project key, or the web wss url if there is a project key.
    */
@@ -93,6 +93,17 @@ export interface LimelightConfig {
    * A callback function to modify or filter events before they are sent to the server
    */
   beforeSend?: (event: LimelightMessage) => LimelightMessage | null;
+  /**
+   * Custom WebSocket implementation for Node.js environments where WebSocket
+   * is not globally available (Node < 22). Pass the `ws` package constructor.
+   * @example
+   * import WebSocket from 'ws';
+   * Limelight.connect({ webSocketImpl: WebSocket });
+   */
+  webSocketImpl?: new (
+    url: string,
+    protocols?: string | string[],
+  ) => WebSocket;
 }
 
 /**

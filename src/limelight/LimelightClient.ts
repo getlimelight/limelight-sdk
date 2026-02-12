@@ -6,11 +6,12 @@ import {
 } from "@/types";
 import {
   ConsoleInterceptor,
+  ErrorInterceptor,
   NetworkInterceptor,
   RenderInterceptor,
   XHRInterceptor,
 } from "@/limelight/interceptors";
-import { isDevelopment, safeStringify } from "@/helpers";
+import { hasDOM, isDevelopment, safeStringify } from "@/helpers";
 import {
   LIMELIGHT_DESKTOP_WSS_URL,
   LIMELIGHT_MCP_WS_URL,
@@ -23,6 +24,11 @@ import { StateInterceptor } from "./interceptors/StateInterceptor";
 import { RequestBridge } from "./bridges/RequestBridge";
 import { CommandHandler } from "./handlers/CommandHandler";
 import { Command } from "@/types/commands";
+import {
+  createHttpMiddleware,
+  createWithLimelight,
+  MiddlewareOptions,
+} from "./middleware";
 
 class LimelightClient {
   private ws: WebSocket | null = null;
@@ -42,6 +48,7 @@ class LimelightClient {
   private consoleInterceptor: ConsoleInterceptor;
   private renderInterceptor: RenderInterceptor;
   private stateInterceptor: StateInterceptor;
+  private errorInterceptor: ErrorInterceptor;
   private requestBridge: RequestBridge;
   private commandHandler: CommandHandler | null = null;
 
@@ -63,6 +70,10 @@ class LimelightClient {
       () => this.sessionId,
     );
     this.stateInterceptor = new StateInterceptor(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
+    );
+    this.errorInterceptor = new ErrorInterceptor(
       this.sendMessage.bind(this),
       () => this.sessionId,
     );
@@ -119,14 +130,21 @@ class LimelightClient {
     try {
       if (this.config.enableNetworkInspector) {
         this.networkInterceptor.setup(this.config);
-        this.xhrInterceptor.setup(this.config);
+
+        if (hasDOM()) {
+          this.xhrInterceptor.setup(this.config);
+        }
       }
 
       if (this.config.enableConsole) {
         this.consoleInterceptor.setup(this.config);
+
+        if (!hasDOM()) {
+          this.errorInterceptor.setup(this.config);
+        }
       }
 
-      if (this.config.enableRenderInspector) {
+      if (this.config.enableRenderInspector && hasDOM()) {
         this.renderInterceptor.setup(this.config);
       }
 
@@ -158,7 +176,7 @@ class LimelightClient {
       return;
     }
 
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    if (this.ws && this.ws.readyState === 1 /* WebSocket.OPEN */) {
       if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] Already connected. Call disconnect() first.");
       }
@@ -189,8 +207,21 @@ class LimelightClient {
       return;
     }
 
+    const WsConstructor =
+      this.config.webSocketImpl ??
+      (typeof WebSocket !== "undefined" ? WebSocket : undefined);
+
+    if (!WsConstructor) {
+      if (this.config?.enableInternalLogging) {
+        console.error(
+          "[Limelight] WebSocket is not available. Pass webSocketImpl in config (e.g. ws package).",
+        );
+      }
+      return;
+    }
+
     try {
-      this.ws = new WebSocket(serverUrl);
+      this.ws = new WsConstructor(serverUrl);
 
       const message: LimelightMessage = {
         phase: "CONNECT",
@@ -200,7 +231,11 @@ class LimelightClient {
           appName: appName,
           platform:
             platform ||
-            (typeof window !== "undefined" ? "web" : "react-native"),
+            (hasDOM()
+              ? "web"
+              : typeof process !== "undefined"
+                ? "node"
+                : "react-native"),
           projectKey: this.config.projectKey || "",
           sdkVersion: SDK_VERSION,
         },
@@ -277,11 +312,15 @@ class LimelightClient {
    * @returns {void}
    */
   private flushMessageQueue() {
-    if (this.ws?.readyState !== WebSocket.OPEN) return;
+    if (this.ws?.readyState !== 1 /* WebSocket.OPEN */) return;
 
     while (this.messageQueue.length > 0) {
       const message = this.messageQueue.shift();
       try {
+        // Patch sessionId for messages queued before connect()
+        if (message && "sessionId" in message && !message.sessionId) {
+          (message as any).sessionId = this.sessionId;
+        }
         this.ws.send(safeStringify(message));
       } catch (error) {
         if (this.config?.enableInternalLogging) {
@@ -300,10 +339,10 @@ class LimelightClient {
    * @returns {void}
    */
   private sendMessage(message: LimelightMessage) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === 1 /* WebSocket.OPEN */) {
       this.flushMessageQueue();
 
-      if (this.ws?.readyState === WebSocket.OPEN) {
+      if (this.ws?.readyState === 1 /* WebSocket.OPEN */) {
         try {
           this.ws.send(safeStringify(message));
         } catch (error) {
@@ -380,6 +419,7 @@ class LimelightClient {
     this.networkInterceptor.cleanup();
     this.xhrInterceptor.cleanup();
     this.consoleInterceptor.cleanup();
+    this.errorInterceptor.cleanup();
     this.renderInterceptor.cleanup();
     this.stateInterceptor.cleanup();
     this.requestBridge.cleanup();
@@ -430,6 +470,50 @@ class LimelightClient {
    */
   failRequest(requestId: string, error: unknown): void {
     this.requestBridge.failRequest(requestId, error);
+  }
+
+  /**
+   * Returns an Express/Connect-compatible middleware that captures incoming
+   * HTTP requests and responses.
+   *
+   * Place after body-parser middleware (express.json(), etc.) for request body capture.
+   *
+   * @example
+   * ```ts
+   * app.use(express.json());
+   * app.use(Limelight.middleware());
+   * ```
+   */
+  middleware(options?: MiddlewareOptions) {
+    return createHttpMiddleware(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
+      () => this.config,
+      options,
+    );
+  }
+
+  /**
+   * Wraps a Next.js Pages API route handler with request/response capture.
+   * Works with Pages Router (`pages/api/`), not App Router (`app/api/`).
+   *
+   * @example
+   * ```ts
+   * // pages/api/users.ts
+   * export default Limelight.withLimelight((req, res) => {
+   *   res.json({ ok: true });
+   * });
+   * ```
+   */
+  withLimelight(
+    handler: Parameters<ReturnType<typeof createWithLimelight>>[0],
+  ) {
+    const wrapper = createWithLimelight(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
+      () => this.config,
+    );
+    return wrapper(handler);
   }
 }
 

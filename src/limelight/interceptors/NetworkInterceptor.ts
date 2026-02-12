@@ -19,7 +19,7 @@ import {
 import { generateRequestId } from "@/protocol";
 
 export class NetworkInterceptor {
-  private originalFetch: typeof fetch;
+  private originalFetch: typeof fetch | undefined;
 
   private config: LimelightConfig | null = null;
   private isSetup = false;
@@ -30,7 +30,9 @@ export class NetworkInterceptor {
     private getSessionId: () => string,
   ) {
     this.globalObject = detectGlobalObject();
-    this.originalFetch = this.globalObject.fetch.bind(this.globalObject);
+    if (typeof this.globalObject.fetch === "function") {
+      this.originalFetch = this.globalObject.fetch.bind(this.globalObject);
+    }
   }
 
   /**
@@ -49,10 +51,20 @@ export class NetworkInterceptor {
       return;
     }
 
+    if (!this.originalFetch) {
+      if (config?.enableInternalLogging) {
+        console.warn(
+          "[Limelight] fetch is not available in this environment, skipping network interception",
+        );
+      }
+      return;
+    }
+
     this.isSetup = true;
     this.config = config;
 
     const self = this;
+    const originalFetch = this.originalFetch;
 
     this.globalObject.fetch = async function (
       input: string | Request | URL,
@@ -149,13 +161,13 @@ export class NetworkInterceptor {
         const modifiedEvent = self.config.beforeSend(requestEvent);
 
         if (!modifiedEvent) {
-          return self.originalFetch(input, modifiedInit);
+          return originalFetch(input, modifiedInit);
         }
 
         if (modifiedEvent.phase !== NetworkPhase.REQUEST) {
           // always log an error if beforeSend returns wrong type
           console.error("[Limelight] beforeSend must return same event type");
-          return self.originalFetch(input, modifiedInit);
+          return originalFetch(input, modifiedInit);
         }
 
         requestEvent = modifiedEvent;
@@ -164,7 +176,7 @@ export class NetworkInterceptor {
       self.sendMessage(requestEvent);
 
       try {
-        const response = await self.originalFetch(input, modifiedInit);
+        const response = await originalFetch(input, modifiedInit);
         const clone = response.clone();
         const endTime = Date.now();
         const duration = endTime - startTime;
@@ -271,6 +283,8 @@ export class NetworkInterceptor {
     }
 
     this.isSetup = false;
-    this.globalObject.fetch = this.originalFetch;
+    if (this.originalFetch) {
+      this.globalObject.fetch = this.originalFetch;
+    }
   }
 }

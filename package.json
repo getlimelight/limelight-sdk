@@ -1,7 +1,7 @@
 {
   "name": "@getlimelight/sdk",
   "version": "0.6.1",
-  "description": "The react native debugger that actually works",
+  "description": "Runtime context SDK for debugging React, React Native, and Node.js apps",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -73,7 +73,7 @@
     }
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "publishConfig": {
     "access": "public"
