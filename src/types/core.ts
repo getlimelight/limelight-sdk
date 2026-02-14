@@ -77,6 +77,7 @@ export interface SerializedBody {
  */
 export interface BaseNetworkEvent {
   id: string; // request ID linking request/response/error
+  traceId?: string; // correlates client → server → downstream events
   sessionId: string;
   timestamp: number; // unix ms
   phase: NetworkPhase;

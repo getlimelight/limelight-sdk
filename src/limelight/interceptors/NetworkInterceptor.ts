@@ -17,6 +17,7 @@ import {
   serializeBody,
 } from "@/helpers";
 import { generateRequestId } from "@/protocol";
+import { getTraceContext } from "@/limelight/context";
 
 export class NetworkInterceptor {
   private originalFetch: typeof fetch | undefined;
@@ -98,6 +99,16 @@ export class NetworkInterceptor {
 
       headers["x-limelight-intercepted"] = "fetch";
 
+      const traceHeaderName =
+        self.config?.traceHeaderName ?? "x-limelight-trace-id";
+
+      if (!headers[traceHeaderName]) {
+        const existingTraceId = getTraceContext()?.getStore()?.traceId;
+        headers[traceHeaderName] = existingTraceId || generateRequestId();
+      }
+
+      const traceId = headers[traceHeaderName];
+
       modifiedInit.headers = new Headers(headers);
 
       let requestBodyToSerialize = init.body;
@@ -143,6 +154,7 @@ export class NetworkInterceptor {
 
       let requestEvent: LimelightMessage = {
         id: requestId,
+        traceId,
         sessionId: self.getSessionId(),
         timestamp: startTime,
         phase: NetworkPhase.REQUEST,
@@ -201,6 +213,7 @@ export class NetworkInterceptor {
 
         let responseEvent: LimelightMessage = {
           id: requestId,
+          traceId,
           sessionId: self.getSessionId(),
           timestamp: endTime,
           phase: NetworkPhase.RESPONSE,
@@ -243,6 +256,7 @@ export class NetworkInterceptor {
 
         let errorEvent: NetworkErrorEvent = {
           id: requestId,
+          traceId,
           sessionId: self.getSessionId(),
           timestamp: Date.now(),
           phase: isAbort ? NetworkPhase.ABORT : NetworkPhase.ERROR,

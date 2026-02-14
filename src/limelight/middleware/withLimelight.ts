@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import { LimelightConfig, LimelightMessage } from "@/types";
 import { captureRequest, MiddlewareOptions } from "./httpMiddleware";
+import { getTraceContext } from "@/limelight/context";
 
 type NextApiHandler = (
   req: IncomingMessage & { body?: unknown; query?: Record<string, unknown> },
@@ -40,6 +41,14 @@ export const createWithLimelight = (
   return (handler: NextApiHandler): NextApiHandler => {
     return (req, res) => {
       captureRequest(req, res, sendMessage, getSessionId, getConfig(), options);
+
+      const traceId = (req as any).limelightTraceId as string | undefined;
+      const ctx = getTraceContext();
+
+      if (ctx && traceId) {
+        return ctx.run({ traceId }, () => handler(req, res));
+      }
+
       return handler(req, res);
     };
   };

@@ -20,6 +20,7 @@ declare global {
   interface XMLHttpRequest {
     _limelightData?: {
       id: string;
+      traceId?: string;
       method: string;
       url: string;
       headers: Record<string, string>;
@@ -110,6 +111,20 @@ export class XHRInterceptor {
       }
 
       if (data) {
+        const traceHeaderName =
+          self.config?.traceHeaderName ?? "x-limelight-trace-id";
+
+        if (!data.headers[traceHeaderName]) {
+          data.traceId = generateRequestId();
+          self.originalXHRSetRequestHeader.call(
+            this,
+            traceHeaderName,
+            data.traceId,
+          );
+        } else {
+          data.traceId = data.headers[traceHeaderName];
+        }
+
         const requestBody = serializeBody(
           body,
           self.config?.disableBodyCapture,
@@ -117,6 +132,7 @@ export class XHRInterceptor {
 
         let requestEvent: LimelightMessage = {
           id: data.id,
+          traceId: data.traceId,
           sessionId: self.getSessionId(),
           timestamp: data.startTime,
           phase: NetworkPhase.REQUEST,
@@ -169,6 +185,7 @@ export class XHRInterceptor {
          */
         const sendResponse = () => {
           if (responseSent) return;
+
           responseSent = true;
 
           const endTime = Date.now();
@@ -201,6 +218,7 @@ export class XHRInterceptor {
 
           let responseEvent: LimelightMessage = {
             id: data.id,
+            traceId: data.traceId,
             sessionId: self.getSessionId(),
             timestamp: endTime,
             phase: NetworkPhase.RESPONSE,
@@ -246,10 +264,12 @@ export class XHRInterceptor {
           phase: NetworkPhase.ERROR | NetworkPhase.ABORT = NetworkPhase.ERROR,
         ) => {
           if (responseSent) return;
+
           responseSent = true;
 
           let errorEvent: NetworkErrorEvent = {
             id: data.id,
+            traceId: data.traceId,
             sessionId: self.getSessionId(),
             timestamp: Date.now(),
             phase: phase,

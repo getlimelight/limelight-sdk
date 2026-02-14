@@ -8,6 +8,7 @@ import {
 } from "@/types";
 import { redactSensitiveHeaders, serializeBody } from "@/helpers";
 import { generateRequestId } from "@/protocol";
+import { getTraceContext } from "@/limelight/context";
 
 const DEFAULT_MAX_BODY_SIZE = 64 * 1024; // 64KB
 
@@ -41,6 +42,11 @@ export const captureRequest = (
   const startTime = Date.now();
   const maxBodySize = options?.maxBodySize ?? DEFAULT_MAX_BODY_SIZE;
 
+  const traceHeaderName = config?.traceHeaderName ?? "x-limelight-trace-id";
+  const incomingTraceId = req.headers[traceHeaderName] as string | undefined;
+  const traceId = incomingTraceId || generateRequestId();
+  (req as any).limelightTraceId = traceId;
+
   const url = req.url || "/";
   const method = (req.method || "GET").toUpperCase() as HttpMethod;
 
@@ -66,6 +72,7 @@ export const captureRequest = (
 
   let requestEvent: LimelightMessage = {
     id: requestId,
+    traceId,
     sessionId: getSessionId(),
     timestamp: startTime,
     phase: NetworkPhase.REQUEST,
@@ -150,6 +157,7 @@ export const captureRequest = (
 
     let responseEvent: LimelightMessage = {
       id: requestId,
+      traceId,
       sessionId: getSessionId(),
       timestamp: endTime,
       phase: NetworkPhase.RESPONSE,
@@ -203,6 +211,12 @@ export const createHttpMiddleware = (
     next: () => void,
   ) => {
     captureRequest(req, res, sendMessage, getSessionId, getConfig(), options);
-    next();
+    const traceId = (req as any).limelightTraceId as string | undefined;
+    const ctx = getTraceContext();
+    if (ctx && traceId) {
+      ctx.run({ traceId }, next);
+    } else {
+      next();
+    }
   };
 };
