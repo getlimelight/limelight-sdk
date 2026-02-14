@@ -105,21 +105,23 @@ export const captureRequest = (
   const originalWrite = res.write;
   const originalEnd = res.end;
 
-  res.write = function (chunk: any, ...args: any[]): boolean {
-    if (chunk && totalSize < maxBodySize) {
+  res.write = (chunk: any, ...args: any[]): boolean => {
+    if (chunk && typeof chunk !== "function" && totalSize < maxBodySize) {
       const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       chunks.push(buf);
       totalSize += buf.length;
     }
+
     return originalWrite.apply(res, [chunk, ...args] as any);
   };
 
-  res.end = function (chunk: any, ...args: any[]): ServerResponse {
-    if (chunk && totalSize < maxBodySize) {
+  res.end = (chunk: any, ...args: any[]): ServerResponse => {
+    if (chunk && typeof chunk !== "function" && totalSize < maxBodySize) {
       const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       chunks.push(buf);
       totalSize += buf.length;
     }
+
     return originalEnd.apply(res, [chunk, ...args] as any);
   };
 
@@ -175,10 +177,12 @@ export const captureRequest = (
     if (config?.beforeSend) {
       const modified = config.beforeSend(responseEvent);
       if (!modified) return;
+
       if (modified.phase !== NetworkPhase.RESPONSE) {
         console.error("[Limelight] beforeSend must return same event type");
         return;
       }
+
       responseEvent = modified;
     }
 
@@ -211,8 +215,10 @@ export const createHttpMiddleware = (
     next: () => void,
   ) => {
     captureRequest(req, res, sendMessage, getSessionId, getConfig(), options);
+
     const traceId = (req as any).limelightTraceId as string | undefined;
     const ctx = getTraceContext();
+
     if (ctx && traceId) {
       ctx.run({ traceId }, next);
     } else {
