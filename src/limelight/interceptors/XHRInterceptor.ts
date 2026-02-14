@@ -32,9 +32,9 @@ declare global {
 }
 
 export class XHRInterceptor {
-  private originalXHROpen: typeof XMLHttpRequest.prototype.open;
-  private originalXHRSend: typeof XMLHttpRequest.prototype.send;
-  private originalXHRSetRequestHeader: typeof XMLHttpRequest.prototype.setRequestHeader;
+  private originalXHROpen!: typeof XMLHttpRequest.prototype.open;
+  private originalXHRSend!: typeof XMLHttpRequest.prototype.send;
+  private originalXHRSetRequestHeader!: typeof XMLHttpRequest.prototype.setRequestHeader;
 
   private isSetup = false;
   private config: LimelightConfig | null = null;
@@ -43,10 +43,12 @@ export class XHRInterceptor {
     private sendMessage: (message: LimelightMessage) => void,
     private getSessionId: () => string,
   ) {
-    this.originalXHROpen = XMLHttpRequest.prototype.open;
-    this.originalXHRSend = XMLHttpRequest.prototype.send;
-    this.originalXHRSetRequestHeader =
-      XMLHttpRequest.prototype.setRequestHeader;
+    if (typeof XMLHttpRequest !== "undefined") {
+      this.originalXHROpen = XMLHttpRequest.prototype.open;
+      this.originalXHRSend = XMLHttpRequest.prototype.send;
+      this.originalXHRSetRequestHeader =
+        XMLHttpRequest.prototype.setRequestHeader;
+    }
   }
 
   /**
@@ -57,6 +59,10 @@ export class XHRInterceptor {
    * @returns {void}
    */
   setup(config: LimelightConfig) {
+    if (typeof XMLHttpRequest === "undefined") {
+      return;
+    }
+
     if (this.isSetup) {
       if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] XHR interceptor already set up");
@@ -367,17 +373,15 @@ export class XHRInterceptor {
    */
   cleanup() {
     if (!this.isSetup) {
-      if (this.config?.enableInternalLogging) {
-        console.warn("[Limelight] XHR interceptor not set up");
-      }
-
       return;
     }
     this.isSetup = false;
 
-    XMLHttpRequest.prototype.open = this.originalXHROpen;
-    XMLHttpRequest.prototype.send = this.originalXHRSend;
-    XMLHttpRequest.prototype.setRequestHeader =
-      this.originalXHRSetRequestHeader;
+    if (typeof XMLHttpRequest !== "undefined") {
+      XMLHttpRequest.prototype.open = this.originalXHROpen;
+      XMLHttpRequest.prototype.send = this.originalXHRSend;
+      XMLHttpRequest.prototype.setRequestHeader =
+        this.originalXHRSetRequestHeader;
+    }
   }
 }

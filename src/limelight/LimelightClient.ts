@@ -131,7 +131,7 @@ class LimelightClient {
       if (this.config.enableNetworkInspector) {
         this.networkInterceptor.setup(this.config);
 
-        if (hasDOM()) {
+        if (typeof XMLHttpRequest !== "undefined") {
           this.xhrInterceptor.setup(this.config);
         }
       }

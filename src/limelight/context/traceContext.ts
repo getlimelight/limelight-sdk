@@ -20,14 +20,14 @@ export const getTraceContext = (): TraceContextLike | undefined => {
   if (!_resolved) {
     _resolved = true;
     try {
-      // @ts-ignore — dynamic require, not available in browser
-      const { AsyncLocalStorage } = require(
-        /* webpackIgnore: true */ "node:async_hooks",
-      );
+      // Use indirect require via globalThis so Metro/webpack can't
+      // statically resolve and bundle this Node-only module.
+      const _require = globalThis["require"] as typeof require;
+      const { AsyncLocalStorage } = _require("node:async_hooks");
 
       _traceContext = new AsyncLocalStorage() as TraceContextLike;
     } catch {
-      // Browser environment — AsyncLocalStorage not available
+      // Browser / React Native — AsyncLocalStorage not available
     }
   }
 
