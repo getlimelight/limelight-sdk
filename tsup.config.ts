@@ -7,7 +7,7 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: [],
+  external: ["http", "https", "node:http", "node:https"],
   define: {
     __SDK_VERSION__: JSON.stringify(pkg.version),
   },
