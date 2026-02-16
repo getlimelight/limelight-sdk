@@ -296,10 +296,11 @@ export class HttpInterceptor {
       const responseChunks: Buffer[] = [];
       let responseSize = 0;
 
-      res.on("data", (chunk: Buffer) => {
+      res.on("data", (chunk: Buffer | string) => {
         if (responseSize < MAX_BODY_SIZE) {
-          responseChunks.push(chunk);
-          responseSize += chunk.length;
+          const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          responseChunks.push(buf);
+          responseSize += buf.length;
         }
       });
 
