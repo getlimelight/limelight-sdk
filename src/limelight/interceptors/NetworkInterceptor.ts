@@ -17,9 +17,10 @@ import {
   serializeBody,
 } from "@/helpers";
 import { generateRequestId } from "@/protocol";
+import { getTraceContext } from "@/limelight/context";
 
 export class NetworkInterceptor {
-  private originalFetch: typeof fetch;
+  private originalFetch: typeof fetch | undefined;
 
   private config: LimelightConfig | null = null;
   private isSetup = false;
@@ -30,7 +31,9 @@ export class NetworkInterceptor {
     private getSessionId: () => string,
   ) {
     this.globalObject = detectGlobalObject();
-    this.originalFetch = this.globalObject.fetch.bind(this.globalObject);
+    if (typeof this.globalObject.fetch === "function") {
+      this.originalFetch = this.globalObject.fetch.bind(this.globalObject);
+    }
   }
 
   /**
@@ -49,10 +52,20 @@ export class NetworkInterceptor {
       return;
     }
 
+    if (!this.originalFetch) {
+      if (config?.enableInternalLogging) {
+        console.warn(
+          "[Limelight] fetch is not available in this environment, skipping network interception",
+        );
+      }
+      return;
+    }
+
     this.isSetup = true;
     this.config = config;
 
     const self = this;
+    const originalFetch = this.originalFetch;
 
     this.globalObject.fetch = async function (
       input: string | Request | URL,
@@ -85,6 +98,16 @@ export class NetworkInterceptor {
       }
 
       headers["x-limelight-intercepted"] = "fetch";
+
+      const traceHeaderName =
+        self.config?.traceHeaderName ?? "x-limelight-trace-id";
+
+      if (!headers[traceHeaderName]) {
+        const existingTraceId = getTraceContext()?.getStore()?.traceId;
+        headers[traceHeaderName] = existingTraceId || generateRequestId();
+      }
+
+      const traceId = headers[traceHeaderName];
 
       modifiedInit.headers = new Headers(headers);
 
@@ -131,6 +154,7 @@ export class NetworkInterceptor {
 
       let requestEvent: LimelightMessage = {
         id: requestId,
+        traceId,
         sessionId: self.getSessionId(),
         timestamp: startTime,
         phase: NetworkPhase.REQUEST,
@@ -149,13 +173,13 @@ export class NetworkInterceptor {
         const modifiedEvent = self.config.beforeSend(requestEvent);
 
         if (!modifiedEvent) {
-          return self.originalFetch(input, modifiedInit);
+          return originalFetch(input, modifiedInit);
         }
 
         if (modifiedEvent.phase !== NetworkPhase.REQUEST) {
           // always log an error if beforeSend returns wrong type
           console.error("[Limelight] beforeSend must return same event type");
-          return self.originalFetch(input, modifiedInit);
+          return originalFetch(input, modifiedInit);
         }
 
         requestEvent = modifiedEvent;
@@ -164,7 +188,7 @@ export class NetworkInterceptor {
       self.sendMessage(requestEvent);
 
       try {
-        const response = await self.originalFetch(input, modifiedInit);
+        const response = await originalFetch(input, modifiedInit);
         const clone = response.clone();
         const endTime = Date.now();
         const duration = endTime - startTime;
@@ -189,6 +213,7 @@ export class NetworkInterceptor {
 
         let responseEvent: LimelightMessage = {
           id: requestId,
+          traceId,
           sessionId: self.getSessionId(),
           timestamp: endTime,
           phase: NetworkPhase.RESPONSE,
@@ -231,6 +256,7 @@ export class NetworkInterceptor {
 
         let errorEvent: NetworkErrorEvent = {
           id: requestId,
+          traceId,
           sessionId: self.getSessionId(),
           timestamp: Date.now(),
           phase: isAbort ? NetworkPhase.ABORT : NetworkPhase.ERROR,
@@ -271,6 +297,8 @@ export class NetworkInterceptor {
     }
 
     this.isSetup = false;
-    this.globalObject.fetch = this.originalFetch;
+    if (this.originalFetch) {
+      this.globalObject.fetch = this.originalFetch;
+    }
   }
 }

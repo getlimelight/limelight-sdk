@@ -20,6 +20,7 @@ declare global {
   interface XMLHttpRequest {
     _limelightData?: {
       id: string;
+      traceId?: string;
       method: string;
       url: string;
       headers: Record<string, string>;
@@ -31,9 +32,9 @@ declare global {
 }
 
 export class XHRInterceptor {
-  private originalXHROpen: typeof XMLHttpRequest.prototype.open;
-  private originalXHRSend: typeof XMLHttpRequest.prototype.send;
-  private originalXHRSetRequestHeader: typeof XMLHttpRequest.prototype.setRequestHeader;
+  private originalXHROpen!: typeof XMLHttpRequest.prototype.open;
+  private originalXHRSend!: typeof XMLHttpRequest.prototype.send;
+  private originalXHRSetRequestHeader!: typeof XMLHttpRequest.prototype.setRequestHeader;
 
   private isSetup = false;
   private config: LimelightConfig | null = null;
@@ -42,10 +43,12 @@ export class XHRInterceptor {
     private sendMessage: (message: LimelightMessage) => void,
     private getSessionId: () => string,
   ) {
-    this.originalXHROpen = XMLHttpRequest.prototype.open;
-    this.originalXHRSend = XMLHttpRequest.prototype.send;
-    this.originalXHRSetRequestHeader =
-      XMLHttpRequest.prototype.setRequestHeader;
+    if (typeof XMLHttpRequest !== "undefined") {
+      this.originalXHROpen = XMLHttpRequest.prototype.open;
+      this.originalXHRSend = XMLHttpRequest.prototype.send;
+      this.originalXHRSetRequestHeader =
+        XMLHttpRequest.prototype.setRequestHeader;
+    }
   }
 
   /**
@@ -56,6 +59,10 @@ export class XHRInterceptor {
    * @returns {void}
    */
   setup(config: LimelightConfig) {
+    if (typeof XMLHttpRequest === "undefined") {
+      return;
+    }
+
     if (this.isSetup) {
       if (this.config?.enableInternalLogging) {
         console.warn("[Limelight] XHR interceptor already set up");
@@ -110,6 +117,20 @@ export class XHRInterceptor {
       }
 
       if (data) {
+        const traceHeaderName =
+          self.config?.traceHeaderName ?? "x-limelight-trace-id";
+
+        if (!data.headers[traceHeaderName]) {
+          data.traceId = generateRequestId();
+          self.originalXHRSetRequestHeader.call(
+            this,
+            traceHeaderName,
+            data.traceId,
+          );
+        } else {
+          data.traceId = data.headers[traceHeaderName];
+        }
+
         const requestBody = serializeBody(
           body,
           self.config?.disableBodyCapture,
@@ -117,6 +138,7 @@ export class XHRInterceptor {
 
         let requestEvent: LimelightMessage = {
           id: data.id,
+          traceId: data.traceId,
           sessionId: self.getSessionId(),
           timestamp: data.startTime,
           phase: NetworkPhase.REQUEST,
@@ -169,6 +191,7 @@ export class XHRInterceptor {
          */
         const sendResponse = () => {
           if (responseSent) return;
+
           responseSent = true;
 
           const endTime = Date.now();
@@ -201,6 +224,7 @@ export class XHRInterceptor {
 
           let responseEvent: LimelightMessage = {
             id: data.id,
+            traceId: data.traceId,
             sessionId: self.getSessionId(),
             timestamp: endTime,
             phase: NetworkPhase.RESPONSE,
@@ -246,10 +270,12 @@ export class XHRInterceptor {
           phase: NetworkPhase.ERROR | NetworkPhase.ABORT = NetworkPhase.ERROR,
         ) => {
           if (responseSent) return;
+
           responseSent = true;
 
           let errorEvent: NetworkErrorEvent = {
             id: data.id,
+            traceId: data.traceId,
             sessionId: self.getSessionId(),
             timestamp: Date.now(),
             phase: phase,
@@ -347,17 +373,15 @@ export class XHRInterceptor {
    */
   cleanup() {
     if (!this.isSetup) {
-      if (this.config?.enableInternalLogging) {
-        console.warn("[Limelight] XHR interceptor not set up");
-      }
-
       return;
     }
     this.isSetup = false;
 
-    XMLHttpRequest.prototype.open = this.originalXHROpen;
-    XMLHttpRequest.prototype.send = this.originalXHRSend;
-    XMLHttpRequest.prototype.setRequestHeader =
-      this.originalXHRSetRequestHeader;
+    if (typeof XMLHttpRequest !== "undefined") {
+      XMLHttpRequest.prototype.open = this.originalXHROpen;
+      XMLHttpRequest.prototype.send = this.originalXHRSend;
+      XMLHttpRequest.prototype.setRequestHeader =
+        this.originalXHRSetRequestHeader;
+    }
   }
 }

@@ -13,6 +13,7 @@ export enum NetworkType {
   FETCH = "fetch",
   XHR = "xhr",
   GRAPHQL = "graphql",
+  INCOMING = "incoming",
 }
 
 export enum NetworkPhase {
@@ -76,6 +77,7 @@ export interface SerializedBody {
  */
 export interface BaseNetworkEvent {
   id: string; // request ID linking request/response/error
+  traceId?: string; // correlates client → server → downstream events
   sessionId: string;
   timestamp: number; // unix ms
   phase: NetworkPhase;
@@ -139,28 +141,14 @@ export interface ConnectEvent {
   };
 }
 
-// ============================================================================
-// WEB UI HELPER TYPES
-// ============================================================================
-
 /**
  * Request with its corresponding response (for UI display)
  */
-export interface NetworkRequestWithResponse extends NetworkRequest {
-  response?: NetworkResponse;
-  status?: number;
-  duration?: number;
-  error?: NetworkErrorEvent;
-}
-
 export enum EventType {
   NETWORK = "NETWORK",
   CONSOLE = "CONSOLE",
 }
 
-// ============================================================================
-// UNION TYPES
-// ============================================================================
 /**
  * All possible events that can be sent over WebSocket
  */
@@ -173,25 +161,3 @@ export type NetworkEvent =
   | GraphQLResponse;
 
 export type LimelightEvent = NetworkEvent | ConsoleEvent;
-
-// ============================================================================
-// SESSION
-// ============================================================================
-export interface Session {
-  id: string;
-  appName: string;
-  platform: "ios" | "android";
-  connectedAt: number;
-}
-
-// ============================================================================
-// WEB UI HELPER TYPES
-// ============================================================================
-/**
- * Request with its corresponding response (for UI display)
- */
-export interface NetworkRequestWithResponse extends NetworkRequest {
-  response?: NetworkResponse;
-  status?: number;
-  duration?: number;
-}

@@ -1,6 +1,7 @@
 # Limelight SDK
 
-> **Chrome DevTools for React Native** - Real-time debugging with state inspection, network monitoring, console streaming, and render tracking.
+> **React Native Devtools** - Zero-config network inspector, render profiling, state tracking, and console streaming —
+> all in one workspace. Designed for AI workflows.
 
 [![npm version](https://img.shields.io/npm/v/@getlimelight/sdk.svg)](https://www.npmjs.com/package/@getlimelight/sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -8,16 +9,24 @@
 
 ## Documentation
 
-📚 **Full documentation at [docs.getlimelight.io](https://docs.getlimelight.io)**
+**Full documentation at [docs.getlimelight.io](https://docs.getlimelight.io)**
+
+## Landing page
+
+**Landing page at [getlimelight.io](https://getlimelight.io)**
 
 ## Features
 
-- 🔮 **State Inspection** - Debug Zustand and Redux stores in real-time
-- 🔍 **Network Monitoring** - Inspect all HTTP requests with GraphQL-first support
-- 📊 **Console Streaming** - View logs with stack traces and source detection
-- ⚡ **Render Tracking** - Find why components re-render
-- 🛡️ **Privacy-First** - Automatic redaction of sensitive data
-- 🎨 **Zero Config** - Works out of the box
+- **State Inspection** - Debug Zustand and Redux stores in real-time
+- **Network Monitoring** - Inspect all HTTP requests with GraphQL-first support
+- **Console Streaming** - View logs with stack traces and source detection
+- **Render Tracking** - Find why components re-render
+- **Privacy-First** - Automatic redaction of sensitive data
+- **Zero Config** - Works out of the box
+- **Framework Agnostic** - Work in React, RN, Node, Nextjs, etc...
+- **Full-Stack** - See client to server requests traced together and full-stack logs in one place
+- **Automatic Issue Detection** - Limelight automatically detects issues in your app and server
+- **AI Enabled** - Give your AI coding tools insights into your apps runtime context via the Limelight MCP or thorugh the app
 
 ## Installation
 
@@ -90,14 +99,42 @@ Limelight.connect({
 });
 ```
 
+### Server-Side (Express / Next.js)
+
+Capture incoming HTTP requests and responses on your backend.
+
+**Express / Connect:**
+
+```typescript
+import express from "express";
+import { Limelight } from "@getlimelight/sdk";
+
+const app = express();
+
+app.use(express.json());
+app.use(Limelight.middleware());
+```
+
+**Next.js Pages Router (`pages/api/`):**
+
+```typescript
+// pages/api/users.ts
+import { Limelight } from "@getlimelight/sdk";
+
+export default Limelight.withLimelight((req, res) => {
+  res.json({ ok: true });
+});
+```
+
+Both methods automatically capture request/response headers, bodies, status codes, and timing — and propagate a trace ID (`x-limelight-trace-id`) for full-stack tracing.
+
 ## Learn More
 
 - [Quick Start Guide](https://docs.getlimelight.io/quickstart)
 - [State Inspection](https://docs.getlimelight.io/features/state)
-- [Network Monitoring](https://docs.getlimelight.io/features/network)
-- [Console Streaming](https://docs.getlimelight.io/features/console)
-- [Render Tracking](https://docs.getlimelight.io/features/renders)
-- [Configuration Reference](https://docs.getlimelight.io/configuration)
+- [Network Monitoring](https://docs.getlimelight.io/features/network-requests)
+- [Console Streaming](https://docs.getlimelight.io/features/console-logs)
+- [Render Tracking](https://docs.getlimelight.io/features/render-tracking)
 
 ## License
 
@@ -105,4 +142,4 @@ MIT © Limelight
 
 ---
 
-[Documentation](https://docs.getlimelight.io) · [GitHub](https://github.com/getlimelight/limelight) · [Issues](https://github.com/getlimelight/limelight/issues)
+[Documentation](https://docs.getlimelight.io) · [GitHub](https://github.com/getlimelight/limelight-sdk) · [Issues](https://github.com/getlimelight/limelight-sdk/issues)

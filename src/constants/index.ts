@@ -32,6 +32,11 @@ export const LIMELIGHT_WEB_WSS_URL = "wss://api.getlimelight.io";
 export const LIMELIGHT_DESKTOP_WSS_URL = "ws://localhost:8484";
 
 /**
+ * The WebSocket URL for Limelight MCP server connections.
+ */
+export const LIMELIGHT_MCP_WS_URL = "ws://localhost:9229";
+
+/**
  * The current protocol version used by Limelight.
  */
 export const PROTOCOL_VERSION = "0.1.0";
