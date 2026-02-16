@@ -7,14 +7,21 @@ global.WebSocket = WS as any;
 describe("LimelightClient", () => {
   let client: LimelightClient;
   let mockServer: WS.Server;
+  let serverPort: number;
 
   beforeEach(async () => {
     // Reset the singleton if you are using it, or just create a new instance
     client = new LimelightClient();
 
     await new Promise<void>((resolve, reject) => {
-      mockServer = new WS.Server({ port: 8080 });
-      mockServer.on("listening", () => resolve());
+      // Use port 0 to let the OS assign a random available port
+      mockServer = new WS.Server({ port: 0 });
+      mockServer.on("listening", () => {
+        const addr = mockServer.address();
+        serverPort =
+          typeof addr === "object" && addr !== null ? addr.port : 0;
+        resolve();
+      });
       mockServer.on("error", (err) => reject(err));
     });
   });
@@ -47,7 +54,7 @@ describe("LimelightClient", () => {
       });
 
       client.connect({
-        serverUrl: "ws://localhost:8080",
+        serverUrl: `ws://localhost:${serverPort}`,
         appName: "Test App",
         projectKey: "project-123",
       });
@@ -64,7 +71,7 @@ describe("LimelightClient", () => {
       });
 
       client.connect({
-        serverUrl: "ws://localhost:8080",
+        serverUrl: `ws://localhost:${serverPort}`,
         projectKey: "project-123",
         enableInternalLogging: true, // Add this
       });
@@ -74,7 +81,7 @@ describe("LimelightClient", () => {
 
       // Try to connect again - also needs the flag
       client.connect({
-        serverUrl: "ws://localhost:8080",
+        serverUrl: `ws://localhost:${serverPort}`,
         projectKey: "project-123",
         enableInternalLogging: true, // Add this
       });
@@ -104,7 +111,7 @@ describe("LimelightClient", () => {
 
       // 3. Connect (this now uses our mock)
       client.connect({
-        serverUrl: "ws://localhost:8080",
+        serverUrl: `ws://localhost:${serverPort}`,
         projectKey: "project-123",
       });
 
@@ -175,7 +182,7 @@ describe("LimelightClient", () => {
 
       // Connect and wait for messages to flush
       client.connect({
-        serverUrl: "ws://localhost:8080",
+        serverUrl: `ws://localhost:${serverPort}`,
         projectKey: "project-123",
       });
 

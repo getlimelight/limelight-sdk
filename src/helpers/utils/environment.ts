@@ -6,6 +6,10 @@ export const hasDOM = (): boolean =>
   typeof window !== "undefined" && typeof document !== "undefined";
 
 /**
- * Returns true if running without DOM APIs (Node.js, React Native).
+ * Returns true if running on a Node.js server (not browser, not React Native).
  */
-export const isServer = (): boolean => !hasDOM();
+export const isServer = (): boolean =>
+  !hasDOM() &&
+  typeof process !== "undefined" &&
+  typeof process.versions !== "undefined" &&
+  typeof process.versions.node !== "undefined";
