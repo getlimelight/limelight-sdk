@@ -7,6 +7,7 @@ import {
 import {
   ConsoleInterceptor,
   ErrorInterceptor,
+  HttpInterceptor,
   NetworkInterceptor,
   RenderInterceptor,
   XHRInterceptor,
@@ -45,6 +46,7 @@ class LimelightClient {
 
   private networkInterceptor: NetworkInterceptor;
   private xhrInterceptor: XHRInterceptor;
+  private httpInterceptor: HttpInterceptor;
   private consoleInterceptor: ConsoleInterceptor;
   private renderInterceptor: RenderInterceptor;
   private stateInterceptor: StateInterceptor;
@@ -58,6 +60,10 @@ class LimelightClient {
       () => this.sessionId,
     );
     this.xhrInterceptor = new XHRInterceptor(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
+    );
+    this.httpInterceptor = new HttpInterceptor(
       this.sendMessage.bind(this),
       () => this.sessionId,
     );
@@ -133,6 +139,10 @@ class LimelightClient {
 
         if (typeof XMLHttpRequest !== "undefined") {
           this.xhrInterceptor.setup(this.config);
+        }
+
+        if (!hasDOM()) {
+          this.httpInterceptor.setup(this.config);
         }
       }
 
@@ -418,6 +428,7 @@ class LimelightClient {
 
     this.networkInterceptor.cleanup();
     this.xhrInterceptor.cleanup();
+    this.httpInterceptor.cleanup();
     this.consoleInterceptor.cleanup();
     this.errorInterceptor.cleanup();
     this.renderInterceptor.cleanup();

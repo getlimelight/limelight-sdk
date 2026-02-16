@@ -66,3 +66,21 @@ export const RENDER_THRESHOLDS = {
   MAX_PROP_CHANGES_PER_SNAPSHOT: 10, // Limit delta array size
   TOP_PROPS_TO_REPORT: 5, // Only report top N changed props
 } as const;
+
+/**
+ * Commonly used HTTP header names that are considered sensitive and should be redacted in Limelight messages.
+ */
+export const BINARY_CONTENT_TYPES = [
+  "image/",
+  "audio/",
+  "video/",
+  "application/octet-stream",
+  "application/pdf",
+  "application/zip",
+  "application/gzip",
+];
+
+/**
+ * Max body size for capture in Limelight. Requests or responses with bodies larger than this will have their body content truncated to avoid excessive memory usage.
+ */
+export const MAX_BODY_SIZE = 1024 * 1024; // 1MB cap for body capture

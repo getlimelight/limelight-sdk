@@ -14,6 +14,7 @@ export enum NetworkType {
   XHR = "xhr",
   GRAPHQL = "graphql",
   INCOMING = "incoming",
+  HTTP = "http",
 }
 
 export enum NetworkPhase {

@@ -128,6 +128,15 @@ export default Limelight.withLimelight((req, res) => {
 
 Both methods automatically capture request/response headers, bodies, status codes, and timing — and propagate a trace ID (`x-limelight-trace-id`) for full-stack tracing.
 
+**Outbound HTTP interception** is automatic in Node.js environments. When `enableNetworkInspector` is `true` (the default), the SDK patches `http.request` and `https.request` to capture all outgoing calls your server makes — API calls to other services, auth servers, databases over HTTP, etc. Combined with the incoming middleware, this gives you full end-to-end tracing:
+
+```
+Client (fetch) → Your Server (middleware) → Downstream Service (http interceptor)
+       ↑ same trace ID propagated across all three ↑
+```
+
+No additional setup is required — just connect the SDK and add the middleware.
+
 ## Learn More
 
 - [Quick Start Guide](https://docs.getlimelight.io/quickstart)
