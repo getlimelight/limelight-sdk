@@ -12,7 +12,7 @@ import {
   RenderInterceptor,
   XHRInterceptor,
 } from "@/limelight/interceptors";
-import { hasDOM, isDevelopment, safeStringify } from "@/helpers";
+import { hasDOM, isDevelopment, isServer, safeStringify } from "@/helpers";
 import {
   LIMELIGHT_DESKTOP_WSS_URL,
   LIMELIGHT_MCP_WS_URL,
@@ -141,7 +141,7 @@ class LimelightClient {
           this.xhrInterceptor.setup(this.config);
         }
 
-        if (!hasDOM()) {
+        if (isServer()) {
           this.httpInterceptor.setup(this.config);
         }
       }
@@ -149,12 +149,12 @@ class LimelightClient {
       if (this.config.enableConsole) {
         this.consoleInterceptor.setup(this.config);
 
-        if (!hasDOM()) {
+        if (isServer()) {
           this.errorInterceptor.setup(this.config);
         }
       }
 
-      if (this.config.enableRenderInspector && hasDOM()) {
+      if (this.config.enableRenderInspector && !isServer()) {
         this.renderInterceptor.setup(this.config);
       }
 
