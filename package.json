@@ -1,7 +1,7 @@
 {
   "name": "@getlimelight/sdk",
   "version": "0.7.4",
-  "description": "Runtime context SDK for debugging React, React Native, and Node.js apps",
+  "description": "The react native debugger that actually works.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
