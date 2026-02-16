@@ -23,6 +23,10 @@
 - **Render Tracking** - Find why components re-render
 - **Privacy-First** - Automatic redaction of sensitive data
 - **Zero Config** - Works out of the box
+- **Framework Agnostic** - Work in React, RN, Node, Nextjs, etc...
+- **Full-Stack** - See client to server requests traced together and full-stack logs in one place
+- **Automatic Issue Detection** - Limelight automatically detects issues in your app and server
+- **AI Enabled** - Give your AI coding tools insights into your apps runtime context via the Limelight MCP or thorugh the app
 
 ## Installation
 
