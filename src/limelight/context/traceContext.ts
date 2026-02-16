@@ -22,7 +22,13 @@ export const getTraceContext = (): TraceContextLike | undefined => {
     try {
       // Use indirect require via globalThis so Metro/webpack can't
       // statically resolve and bundle this Node-only module.
-      const _require = globalThis["require"] as typeof require;
+      const _require = (
+        typeof globalThis["require"] === "function"
+          ? globalThis["require"]
+          : new Function(
+              "return typeof require !== 'undefined' ? require : null",
+            )()
+      ) as typeof require;
       const { AsyncLocalStorage } = _require("node:async_hooks");
 
       _traceContext = new AsyncLocalStorage() as TraceContextLike;

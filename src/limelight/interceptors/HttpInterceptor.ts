@@ -37,7 +37,13 @@ export class HttpInterceptor {
     private getSessionId: () => string,
   ) {
     try {
-      const _require = globalThis["require"] as typeof require;
+      const _require = (
+        typeof globalThis["require"] === "function"
+          ? globalThis["require"]
+          : new Function(
+              "return typeof require !== 'undefined' ? require : null",
+            )()
+      ) as typeof require;
       this.httpModule = _require("http");
       this.httpsModule = _require("https");
 
