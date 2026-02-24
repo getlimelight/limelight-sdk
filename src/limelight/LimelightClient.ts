@@ -8,6 +8,7 @@ import {
   ConsoleInterceptor,
   ErrorInterceptor,
   HttpInterceptor,
+  McpInterceptor,
   NetworkInterceptor,
   RenderInterceptor,
   XHRInterceptor,
@@ -55,6 +56,7 @@ class LimelightClient {
   private renderInterceptor: RenderInterceptor;
   private stateInterceptor: StateInterceptor;
   private errorInterceptor: ErrorInterceptor;
+  private mcpInterceptor: McpInterceptor;
   private requestBridge: RequestBridge;
   private commandHandler: CommandHandler | null = null;
 
@@ -84,6 +86,10 @@ class LimelightClient {
       () => this.sessionId,
     );
     this.errorInterceptor = new ErrorInterceptor(
+      this.sendMessage.bind(this),
+      () => this.sessionId,
+    );
+    this.mcpInterceptor = new McpInterceptor(
       this.sendMessage.bind(this),
       () => this.sessionId,
     );
@@ -128,6 +134,7 @@ class LimelightClient {
       enableRenderInspector: config?.enableRenderInspector ?? true,
       enableStateInspector: config?.enableStateInspector ?? true,
       enableInternalLogging: config?.enableInternalLogging ?? false,
+      enableMcpInspector: config?.enableMcpInspector ?? false,
     };
 
     if (!this.config?.enabled) {
@@ -164,6 +171,10 @@ class LimelightClient {
 
       if (this.config.stores && this.config.enableStateInspector) {
         this.stateInterceptor.setup(this.config);
+      }
+
+      if (this.config.enableMcpInspector && isServer()) {
+        this.mcpInterceptor.setup(this.config);
       }
     } catch (error) {
       if (this.config?.enableInternalLogging) {
@@ -454,6 +465,7 @@ class LimelightClient {
     this.errorInterceptor.cleanup();
     this.renderInterceptor.cleanup();
     this.stateInterceptor.cleanup();
+    this.mcpInterceptor.cleanup();
     this.requestBridge.cleanup();
 
     if (this.sessionStartTime > 0) {

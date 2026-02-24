@@ -125,6 +125,12 @@ export interface LimelightConfig {
    * @default true
    */
   telemetry?: boolean;
+  /**
+   * Flag to enable or disable MCP stdio interception.
+   * Captures incoming JSON-RPC requests and outgoing responses on stdin/stdout.
+   * @default false
+   */
+  enableMcpInspector?: boolean;
 }
 
 /**
