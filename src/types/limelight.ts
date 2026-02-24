@@ -119,6 +119,12 @@ export interface LimelightConfig {
    * Limelight.connect({ webSocketImpl: WebSocket });
    */
   webSocketImpl?: new (url: string, protocols?: string | string[]) => WebSocket;
+  /**
+   * Enable anonymous usage telemetry. Only sends event counts, durations,
+   * and framework type — never any runtime data, user code, or request content.
+   * @default true
+   */
+  telemetry?: boolean;
 }
 
 /**
