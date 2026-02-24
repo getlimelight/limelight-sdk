@@ -76,7 +76,6 @@ const getOrCreateAnonymousId = (): string => {
     // localStorage not available or blocked
   }
 
-  // Try file system (Node.js)
   try {
     const _require = globalThis["require"] as typeof require;
 
@@ -156,18 +155,18 @@ export const telemetry = {
   },
 
   sessionStarted() {
-    capture("session_started");
+    capture("sdk_session_started");
   },
 
   sessionEnded(durationSeconds: number, eventCount: number) {
-    capture("session_ended", {
+    capture("sdk_session_ended", {
       duration_seconds: durationSeconds,
       event_count: eventCount,
     });
   },
 
   timelineGenerated(eventsCorrelated: number) {
-    capture("timeline_generated", {
+    capture("sdk_timeline_generated", {
       events_correlated: eventsCorrelated,
       framework,
     });
