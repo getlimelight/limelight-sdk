@@ -1,5 +1,8 @@
 import { defineConfig } from "tsup";
+import { config } from "dotenv";
 import pkg from "./package.json";
+
+config();
 
 export default defineConfig({
   entry: ["src/index.ts"],
@@ -18,6 +21,8 @@ export default defineConfig({
   },
   define: {
     __SDK_VERSION__: JSON.stringify(pkg.version),
+    __POSTHOG_API_KEY__: JSON.stringify(process.env.POSTHOG_API_KEY || ""),
+    __POSTHOG_HOST__: JSON.stringify(process.env.POSTHOG_HOST || ""),
   },
   esbuildOptions(options) {
     options.alias = {

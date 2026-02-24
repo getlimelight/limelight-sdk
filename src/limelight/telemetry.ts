@@ -1,9 +1,10 @@
-import { SDK_VERSION } from "@/constants";
+import {
+  POSTHOG_API_KEY,
+  POSTHOG_HOST,
+  SDK_VERSION,
+  STORAGE_KEY,
+} from "@/constants";
 import { hasDOM, isServer } from "@/helpers";
-
-const POSTHOG_API_KEY = "phc_PLACEHOLDER";
-const POSTHOG_HOST = "https://us.i.posthog.com";
-const STORAGE_KEY = "limelight_anon_id";
 
 let anonymousId: string | null = null;
 let enabled = false;
@@ -16,7 +17,7 @@ let framework = "unknown";
  */
 const detectFramework = (): string => {
   try {
-    if (typeof navigator !== "undefined" && navigator.product === "ReactNative")
+    if (typeof navigator !== "undefined" && "ReactNative" in navigator)
       return "react-native";
 
     if (
@@ -58,14 +59,15 @@ const generateId = (): string => {
 const getOrCreateAnonymousId = (): string => {
   if (anonymousId) return anonymousId;
 
-  // Try localStorage (browser)
   try {
     if (typeof localStorage !== "undefined") {
       const stored = localStorage.getItem(STORAGE_KEY);
+
       if (stored) {
         anonymousId = stored;
         return anonymousId;
       }
+
       anonymousId = generateId();
       localStorage.setItem(STORAGE_KEY, anonymousId);
       return anonymousId;
@@ -77,26 +79,30 @@ const getOrCreateAnonymousId = (): string => {
   // Try file system (Node.js)
   try {
     const _require = globalThis["require"] as typeof require;
+
     if (_require) {
       const fs = _require("fs");
       const os = _require("os");
       const path = _require("path");
       const filePath = path.join(os.homedir(), ".limelight_telemetry_id");
+
       try {
         anonymousId = fs.readFileSync(filePath, "utf-8").trim();
+
         if (anonymousId) return anonymousId;
       } catch {
         // File doesn't exist yet
       }
+
       anonymousId = generateId();
       fs.writeFileSync(filePath, anonymousId, "utf-8");
+
       return anonymousId;
     }
   } catch {
     // Not in Node.js or fs not available
   }
 
-  // Fallback: in-memory only
   anonymousId = generateId();
   return anonymousId;
 };
@@ -132,12 +138,17 @@ const capture = (event: string, properties: Record<string, unknown> = {}) => {
   }
 };
 
+/**
+ * The telemetry module for Limelight SDK. Provides methods to initialize telemetry, track session start/end, timeline generation, and shutdown.
+ */
 export const telemetry = {
   init(telemetryEnabled: boolean) {
     enabled = telemetryEnabled;
+
     if (!enabled) return;
 
     framework = detectFramework();
+
     capture("sdk_initialized", {
       framework,
       device_id: getOrCreateAnonymousId(),

@@ -84,3 +84,14 @@ export const BINARY_CONTENT_TYPES = [
  * Max body size for capture in Limelight. Requests or responses with bodies larger than this will have their body content truncated to avoid excessive memory usage.
  */
 export const MAX_BODY_SIZE = 1024 * 1024; // 1MB cap for body capture
+
+/**
+ * Generates or retrieves a persistent anonymous ID for telemetry purposes.
+ */
+declare const __POSTHOG_API_KEY__: string;
+declare const __POSTHOG_HOST__: string;
+export const POSTHOG_API_KEY =
+  typeof __POSTHOG_API_KEY__ !== "undefined" ? __POSTHOG_API_KEY__ : "";
+export const POSTHOG_HOST =
+  typeof __POSTHOG_HOST__ !== "undefined" ? __POSTHOG_HOST__ : "";
+export const STORAGE_KEY = "limelight_anon_id";
