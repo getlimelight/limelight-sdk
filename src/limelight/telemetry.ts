@@ -6,6 +6,13 @@ import {
 } from "@/constants";
 import { hasDOM, isServer } from "@/helpers";
 
+// Capture the original fetch before NetworkInterceptor patches globalThis.fetch,
+// so telemetry requests bypass the SDK's own network interception.
+const _fetch =
+  typeof globalThis !== "undefined" && typeof globalThis.fetch === "function"
+    ? globalThis.fetch.bind(globalThis)
+    : undefined;
+
 let anonymousId: string | null = null;
 let enabled = false;
 let framework = "unknown";
@@ -127,7 +134,7 @@ const capture = (event: string, properties: Record<string, unknown> = {}) => {
       },
     };
 
-    fetch(`${POSTHOG_HOST}/capture/`, {
+    _fetch?.(`${POSTHOG_HOST}/capture/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
