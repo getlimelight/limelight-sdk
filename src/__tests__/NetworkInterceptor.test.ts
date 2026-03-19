@@ -185,7 +185,7 @@ describe("NetworkInterceptor", () => {
       expect(global.fetch.name).not.toBe(""); // anonymous wrapper vs named/bound
     });
   });
-  
+
   describe("edge cases", () => {
     it("should handle Request object as input", async () => {
       mockFetch.mockResolvedValue(new Response("ok"));
@@ -205,6 +205,46 @@ describe("NetworkInterceptor", () => {
       expect(sendMessageSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           url: "https://api.example.com/test",
+        }),
+      );
+    });
+
+    it("should preserve Request headers when no init is provided", async () => {
+      mockFetch.mockResolvedValue(new Response("ok"));
+
+      interceptor.setup({
+        enableNetworkInspector: true,
+        projectKey: "project-123",
+      });
+
+      const request = new Request("https://s3.amazonaws.com/bucket/key", {
+        method: "PUT",
+        headers: {
+          Authorization: "AWS4-HMAC-SHA256 Credential=...",
+          "Content-Type": "application/octet-stream",
+          "x-amz-content-sha256": "abc123",
+        },
+      });
+
+      await fetch(request);
+
+      // Verify the original headers were forwarded to the actual fetch
+      const [, passedInit] = mockFetch.mock.calls[0] as [unknown, RequestInit];
+      const forwardedHeaders = new Headers(passedInit.headers);
+
+      expect(forwardedHeaders.get("authorization")).toBe(
+        "AWS4-HMAC-SHA256 Credential=...",
+      );
+      expect(forwardedHeaders.get("content-type")).toBe(
+        "application/octet-stream",
+      );
+      expect(forwardedHeaders.get("x-amz-content-sha256")).toBe("abc123");
+      expect(forwardedHeaders.get("x-limelight-intercepted")).toBe("fetch");
+
+      // Verify method is captured correctly in telemetry
+      expect(sendMessageSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "PUT",
         }),
       );
     });
