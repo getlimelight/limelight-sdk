@@ -81,11 +81,18 @@ export class NetworkInterceptor {
             ? input.toString()
             : input.url;
 
-      const method = (init.method || "GET") as HttpMethod;
+      const method = (init.method ||
+        (input instanceof Request ? input.method : "GET")) as HttpMethod;
 
       const modifiedInit = { ...init };
 
       const headers: Record<string, string> = {};
+
+      if (input instanceof Request) {
+        input.headers.forEach((value, key) => {
+          headers[key.toLowerCase()] = value;
+        });
+      }
 
       if (modifiedInit.headers instanceof Headers) {
         modifiedInit.headers.forEach((value, key) => {
