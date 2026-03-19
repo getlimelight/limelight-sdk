@@ -137,6 +137,25 @@ Client (fetch) → Your Server (middleware) → Downstream Service (http interce
 
 No additional setup is required — just connect the SDK and add the middleware.
 
+## Telemetry
+
+The SDK collects **anonymous** usage telemetry to help us understand adoption and improve the product. **No runtime data, user code, network request bodies, state values, or anything from your app is ever sent.** Only:
+
+- Framework type (react, react-native, next, node)
+- SDK version
+- Event counts and session durations
+- A random anonymous device ID (not tied to any user identity)
+
+Telemetry is **enabled by default**. To opt out:
+
+```typescript
+Limelight.connect({
+  telemetry: false,
+});
+```
+
+When `telemetry` is `false`, no events are sent and no anonymous ID is generated or stored.
+
 ## Learn More
 
 - [Quick Start Guide](https://docs.getlimelight.io/quickstart)

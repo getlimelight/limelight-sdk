@@ -2,8 +2,8 @@
  * Formats a request name based on the URL.
  * * Extracts the last segment of the URL path to use as the request name.
  * * If the URL is invalid, it returns the original URL.
- * * @param {string} url - The URL of the request.
- * * @returns {string} - The formatted request name.
+ * * @param string url - The URL of the request.
+ * * @returns string - The formatted request name.
  */
 export const formatRequestName = (url: string) => {
   try {

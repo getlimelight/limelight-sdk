@@ -30,6 +30,7 @@ import {
   createWithLimelight,
   MiddlewareOptions,
 } from "./middleware";
+import { telemetry } from "./telemetry";
 
 class LimelightClient {
   private ws: WebSocket | null = null;
@@ -43,6 +44,9 @@ class LimelightClient {
 
   private messageQueue: LimelightMessage[] = [];
   private maxQueueSize = 100;
+
+  private sessionStartTime = 0;
+  private sessionEventCount = 0;
 
   private networkInterceptor: NetworkInterceptor;
   private xhrInterceptor: XHRInterceptor;
@@ -166,6 +170,8 @@ class LimelightClient {
         console.error("[Limelight] Failed to setup interceptors:", error);
       }
     }
+
+    telemetry.init(this.config.telemetry ?? true);
   }
 
   /**
@@ -253,8 +259,11 @@ class LimelightClient {
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
+        this.sessionStartTime = Date.now();
+        this.sessionEventCount = 0;
         this.flushMessageQueue();
         this.sendMessage(message);
+        telemetry.sessionStarted();
       };
 
       this.ws.onmessage = (event) => {
@@ -349,6 +358,18 @@ class LimelightClient {
    * @returns {void}
    */
   private sendMessage(message: LimelightMessage) {
+    this.sessionEventCount++;
+
+    if (
+      "phase" in message &&
+      message.phase === "RENDER_SNAPSHOT" &&
+      "profiles" in message
+    ) {
+      telemetry.timelineGenerated(
+        (message as any).profiles?.length ?? 0,
+      );
+    }
+
     if (this.ws?.readyState === 1 /* WebSocket.OPEN */) {
       this.flushMessageQueue();
 
@@ -435,7 +456,16 @@ class LimelightClient {
     this.stateInterceptor.cleanup();
     this.requestBridge.cleanup();
 
+    if (this.sessionStartTime > 0) {
+      const durationSeconds = Math.round(
+        (Date.now() - this.sessionStartTime) / 1000,
+      );
+      telemetry.sessionEnded(durationSeconds, this.sessionEventCount);
+    }
+
     this.reconnectAttempts = 0;
+    this.sessionStartTime = 0;
+    this.sessionEventCount = 0;
     this.messageQueue = [];
   }
 
@@ -447,6 +477,7 @@ class LimelightClient {
    */
   reset() {
     this.disconnect();
+    telemetry.shutdown();
     this.config = null;
     this.sessionId = "";
   }
